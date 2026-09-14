@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+:root {
+  /* Brand colours — pilot school: black and dark red */
+  --color-primary: #1a1a1a;
+  --color-accent: #8B0000;
+  --color-accent-muted: rgba(139, 0, 0, 0.2);
+
+  /* Surfaces */
+  --color-background: #ffffff;
+  --color-surface: #f4f4f4;
+  --color-canvas: #f3f4f6;
+  --color-card: #ffffff;
+  --color-border: #d1d1d1;
+  --color-focus: #8B0000;
+
+  /* Text */
+  --color-text: #1a1a1a;
+  --color-text-muted: #6b6b6b;
+  --color-text-inverse: #ffffff;
+
+  /* Buttons */
+  --color-btn-primary-bg: #1a1a1a;
+  --color-btn-primary-text: #ffffff;
+  --color-btn-outline-border: #1a1a1a;
+  --color-btn-outline-text: #1a1a1a;
+
+  /* Checkbox */
+  --color-checkbox-checked-bg: rgba(139, 0, 0, 0.2);
+  --color-checkbox-checked-border: #8B0000;
+
+  /* Error / warning — yellow like a wet floor sign */
+  --color-warning-bg: #FFC107;
+  --color-warning-text: #1a1a1a;
+  --color-error-bg: #FFC107;
+  --color-error-text: #1a1a1a;
+
+  /* ── Sizing & spacing tokens ─────────────────────────────────────────────
+     Change one value here and every input, button, and form that reads these
+     variables updates automatically — same idea as the colour tokens above.
+  ── */
+
+  /* Controls — inputs and primary buttons share these so they always align */
+  --control-height: 50px;       /* touch-safe tap target */
+  --control-px: 1.5rem;         /* 24px — horizontal padding inside inputs/buttons */
+  --control-radius: 1rem;       /* 16px — rounded-2xl */
+  --control-border: 2px;
+
+  /* Form layout */
+  --field-gap: 1.10rem;         /* 28px — vertical space between form fields */
+  --label-gap: 0.5rem;          /* 8px  — label ↔ input */
+  --heading-gap: 2.5rem;        /* 40px — heading block ↔ first field */
+
+  /* Page chrome */
+  --page-px: 1.5rem;            /* 24px — mobile horizontal page padding */
+  --page-px-sm: 2.5rem;         /* 40px — tablet horizontal page padding */
+  --topbar-pt: 2rem;            /* 32px — top bar top padding */
+}
+
+[data-theme="dark"] {
+  /* Surfaces */
+  --color-background: #1b1b1b;
+  --color-surface: #1e1e1e;
+  --color-canvas: #0a0a0a;
+  --color-card: #1b1b1b;
+  --color-border: #333333;
+  --color-focus: #ffffff;
+
+  /* Text */
+  --color-text: #ffffff;
+  --color-text-muted: #aaaaaa;
+  --color-text-inverse: #ffffff;
+
+  /* Buttons */
+  --color-btn-primary-bg: #8B0000;
+  --color-btn-primary-text: #ffffff;
+  --color-btn-outline-border: #8B0000;
+  --color-btn-outline-text: #ffffff;
+
+  /* Checkbox */
+  --color-checkbox-checked-bg: rgba(139, 0, 0, 0.2);
+  --color-checkbox-checked-border: #8B0000;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html,
+  body {
+    height: 100%;
+    font-family: var(--font-geist-sans), sans-serif;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+}

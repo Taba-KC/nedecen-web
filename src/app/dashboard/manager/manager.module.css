@@ -1,0 +1,33 @@
+.page { min-height:100vh; background:#f3f4f6; color:#202124; padding:32px; font-family:Arial,sans-serif; color-scheme:light; }
+.page * { box-sizing:border-box; }
+.page h1 { font-size:26px; margin:0 0 12px; font-weight:700; }
+.page h2 { font-size:20px; font-weight:700; margin:0 0 12px; }
+.page p { margin:8px 0 16px; }
+.page button { border:1px solid #b5bac2; background:#fff; color:#202124; padding:8px 12px; border-radius:5px; cursor:pointer; font-size:14px; }
+.page button:disabled { opacity:.5; cursor:default; }
+.page button:focus-visible,.page input:focus-visible,.page select:focus-visible,.page textarea:focus-visible { outline:2px solid #762630; outline-offset:2px; }
+.page input,.page select,.page textarea { border:1px solid #b5bac2; background:#fff; color:#202124; border-radius:4px; padding:9px; font-size:15px; }
+.page label { display:flex; flex-direction:column; gap:6px; font-size:14px; }
+.header,.toolbar,.actions { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.header { justify-content:space-between; margin-bottom:24px; }
+.panel { background:#fff; border:1px solid #d7dbe0; border-radius:7px; padding:20px; margin-bottom:16px; }
+.toolbar { align-items:end; }
+.toolbar label { min-width:150px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr)); gap:16px; align-items:start; }
+.topic { background:#fff; border:1px solid #d7dbe0; border-radius:7px; padding:16px; }
+.topic textarea { width:100%; resize:vertical; min-height:58px; }
+.actions { gap:6px; margin:8px 0 14px; }
+.actions button { padding:5px 8px; font-size:12px; }
+.concept { border-top:1px solid #e6e8eb; padding:12px 0 2px; }
+.primary { background:#762630 !important; color:#fff !important; border-color:#762630 !important; }
+.error { color:#a31624; }
+.success { color:#126b35; }
+.login { max-width:440px; margin:10vh auto; background:white; padding:28px; border:1px solid #d7dbe0; border-radius:7px; }
+.login form { display:grid; gap:16px; }
+@media(max-width:600px) { .page { padding:16px; } }
+
+.chapters { display:grid; gap:20px; }
+.chapter { background:#e8ebef; border:1px solid #bfc5cd; border-radius:7px; padding:20px; }
+.chapter > label > textarea { width:100%; min-height:55px; font-size:18px; font-weight:600; }
+.addTopic { margin-top:16px; }
+.warning { color:#704c08; background:#fff2cf; border:1px solid #e6c979; padding:12px; border-radius:5px; }

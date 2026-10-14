@@ -17,7 +17,7 @@ function decodeToken(token: string): Record<string, unknown> {
 export async function login(
   username: string,
   password: string
-): Promise<"person" | "learner"> {
+): Promise<"person" | "learner" | "manager"> {
   try {
     const res = await api.post<LoginResponse>("/auth/people/login", { username, password });
     const payload = decodeToken(res.accessToken);
@@ -29,15 +29,20 @@ export async function login(
     localStorage.setItem("accountId", String(payload.accountId ?? ""));
     return "person";
   } catch {
-    const res = await api.post<LoginResponse>("/auth/learners/login", { username, password });
-    const payload = decodeToken(res.accessToken);
-    localStorage.setItem("accessToken", res.accessToken);
-    localStorage.setItem("refreshToken", res.refreshToken);
-    localStorage.setItem("accountType", "learner");
-    localStorage.setItem("schoolId", String(payload.schoolId ?? ""));
-    localStorage.setItem("accountId", String(payload.accountId ?? ""));
-    localStorage.removeItem("role");
-    return "learner";
+    try {
+      const res = await api.post<LoginResponse>("/auth/learners/login", { username, password });
+      const payload = decodeToken(res.accessToken);
+      localStorage.setItem("accessToken", res.accessToken);
+      localStorage.setItem("refreshToken", res.refreshToken);
+      localStorage.setItem("accountType", "learner");
+      localStorage.setItem("schoolId", String(payload.schoolId ?? ""));
+      localStorage.setItem("accountId", String(payload.accountId ?? ""));
+      localStorage.removeItem("role");
+      return "learner";
+    } catch {
+      await loginManager(username, password);
+      return "manager";
+    }
   }
 }
 
@@ -50,9 +55,9 @@ export function logout() {
   localStorage.removeItem("accountId");
 }
 
-export function getAccountType(): "person" | "learner" | null {
+export function getAccountType(): "person" | "learner" | "manager" | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("accountType") as "person" | "learner" | null;
+  return localStorage.getItem("accountType") as "person" | "learner" | "manager" | null;
 }
 
 export function getRole(): string | null {
@@ -80,10 +85,21 @@ export function isLoggedIn(): boolean {
 }
 
 export function getRedirectPath(
-  accountType: "person" | "learner",
+  accountType: "person" | "learner" | "manager",
   role: string | null
 ): string {
+  if (accountType === "manager") return "/dashboard/manager";
   if (accountType === "learner") return "/dashboard/learner";
   if (role === "principal") return "/dashboard/principal";
   return "/dashboard/staff";
+}
+export async function loginManager(username: string, password: string) {
+  const res = await api.post<LoginResponse>("/auth/managers/login", { username, password });
+  const payload = decodeToken(res.accessToken);
+  localStorage.setItem("accessToken", res.accessToken);
+  localStorage.setItem("refreshToken", res.refreshToken);
+  localStorage.setItem("accountType", "manager");
+  localStorage.setItem("accountId", String(payload.accountId));
+  localStorage.setItem("role", "app_manager");
+  localStorage.removeItem("schoolId");
 }

@@ -9,23 +9,23 @@ function PencilIcon() {
   );
 }
 
-function InfoIcon({ size = 14 }: { size?: number }) {
+function PlusIcon() {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="16" x2="12" y2="12" />
-      <line x1="12" y1="8" x2="12.01" y2="8" strokeWidth="3" />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
     </svg>
   );
 }
 
-function DocumentIcon() {
+function TrashIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 15H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
     </svg>
   );
 }
@@ -52,11 +52,14 @@ interface ClassRowProps {
   onAssignStream: (cls: ClassItem) => void;
   onInfo: (cls: ClassItem) => void;
   onUpload: (cls: ClassItem) => void;
+  onDelete: (cls: ClassItem) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function ClassRow({ cls, stream, isLast, onAssignStream, onInfo, onUpload }: ClassRowProps) {
+export function ClassRow({ cls, stream, isLast, onAssignStream, onInfo, onUpload, onDelete }: ClassRowProps) {
+  const classLabel = cls.name.toLowerCase().startsWith("grade ") ? cls.name : `Grade ${cls.name}`;
+
   return (
     <div
       className="flex items-center gap-3 px-6 py-3.5"
@@ -64,10 +67,10 @@ export function ClassRow({ cls, stream, isLast, onAssignStream, onInfo, onUpload
     >
       {/* Class name */}
       <span
-        className="text-sm font-semibold w-12 flex-shrink-0"
+        className="text-sm font-semibold w-20 flex-shrink-0"
         style={{ color: "var(--color-text)" }}
       >
-        {cls.name}
+        {classLabel}
       </span>
 
       {/* Action icons */}
@@ -81,20 +84,20 @@ export function ClassRow({ cls, stream, isLast, onAssignStream, onInfo, onUpload
           <PencilIcon />
         </button>
         <button
-          onClick={() => onInfo(cls)}
-          title="Stream & subjects"
-          className="p-1.5 rounded-lg hover:bg-[var(--color-surface)] transition-colors"
-          style={{ color: "var(--color-text-muted)" }}
-        >
-          <InfoIcon />
-        </button>
-        <button
           onClick={() => onUpload(cls)}
           title="Add learners"
           className="p-1.5 rounded-lg hover:bg-[var(--color-surface)] transition-colors"
           style={{ color: "var(--color-text-muted)" }}
         >
-          <DocumentIcon />
+          <PlusIcon />
+        </button>
+        <button
+          onClick={() => onDelete(cls)}
+          title="Delete class"
+          className="p-1.5 rounded-lg hover:bg-[var(--color-surface)] transition-colors"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          <TrashIcon />
         </button>
       </div>
 
@@ -103,9 +106,12 @@ export function ClassRow({ cls, stream, isLast, onAssignStream, onInfo, onUpload
 
       {/* Stream chip */}
       {stream ? (
-        <div
+        <button
+          type="button"
+          onClick={() => onInfo(cls)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium flex-shrink-0"
           style={{ backgroundColor: "rgba(34,197,94,0.12)", color: "#15803d" }}
+          title="View stream subjects"
         >
           {/* Green status dot */}
           <span
@@ -113,7 +119,7 @@ export function ClassRow({ cls, stream, isLast, onAssignStream, onInfo, onUpload
             style={{ backgroundColor: "#22c55e" }}
           />
           <span>{stream.name}</span>
-        </div>
+        </button>
       ) : (
         <div
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium flex-shrink-0"

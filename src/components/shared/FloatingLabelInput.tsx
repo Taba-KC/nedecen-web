@@ -28,7 +28,7 @@ export function FloatingLabelInput({
 
   return (
     <div
-      className="relative rounded-lg"
+      className="glass-field relative rounded-lg"
       style={{
         height: "var(--control-height)",
         border: `1.5px solid ${focused ? "var(--color-focus)" : "var(--color-border)"}`,

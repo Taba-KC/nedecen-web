@@ -31,7 +31,7 @@ export function FloatingLabelSelect({
 
   return (
     <div
-      className="relative rounded-lg"
+      className="glass-field relative rounded-lg"
       style={{
         height: "var(--control-height)",
         border: `1.5px solid ${focused ? "var(--color-focus)" : "var(--color-border)"}`,
@@ -50,10 +50,12 @@ export function FloatingLabelSelect({
         disabled={disabled}
         className="w-full h-full text-sm outline-none bg-transparent appearance-none cursor-pointer"
         style={{
-          padding: active ? "14px var(--control-px) 0" : "0 var(--control-px)",
+          paddingTop: active ? "14px" : "0",
           paddingRight: "2.5rem",
+          paddingBottom: "0",
+          paddingLeft: "var(--control-px)",
           color: value ? "var(--color-text)" : "transparent",
-          transition: "padding 0.15s ease",
+          transition: "padding-top 0.15s ease",
         }}
       >
         <option value="" disabled />

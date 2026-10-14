@@ -7,9 +7,10 @@ interface BottomSheetProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  width?: "sm" | "md" | "xl";
 }
 
-export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetProps) {
+export function BottomSheet({ isOpen, onClose, title, children, width = "sm" }: BottomSheetProps) {
   const [isDesktop, setIsDesktop] = useState(false);
 
   // Detect breakpoint (lg = 1024px)
@@ -55,7 +56,8 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
   if (isDesktop) {
     return (
       <div
-        className="fixed inset-0 z-40 flex items-center justify-center p-6"
+        className="modal-backdrop fixed inset-0 z-40 flex items-center justify-center p-6"
+        data-open={isOpen}
         style={{
           backgroundColor: "rgba(0,0,0,0.45)",
           opacity: isOpen ? 1 : 0,
@@ -65,7 +67,7 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
         onClick={onClose}
       >
         <div
-          className="w-full max-w-sm rounded-2xl overflow-hidden flex flex-col"
+          className={`glass-panel modal-panel w-full ${width === "xl" ? "max-w-5xl" : width === "md" ? "max-w-lg" : "max-w-sm"} rounded-2xl overflow-hidden flex flex-col`}
           style={{
             backgroundColor: "var(--color-card)",
             maxHeight: "85vh",
@@ -89,7 +91,8 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40"
+        className="modal-backdrop fixed inset-0 z-40"
+        data-open={isOpen}
         style={{
           backgroundColor: "rgba(0,0,0,0.45)",
           opacity: isOpen ? 1 : 0,
@@ -101,7 +104,7 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
 
       {/* Sheet */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl"
+        className="glass-panel modal-panel fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl"
         style={{
           backgroundColor: "var(--color-card)",
           transform: isOpen ? "translateY(0)" : "translateY(100%)",

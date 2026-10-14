@@ -1,0 +1,62 @@
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import { getAccountType, logout } from "@/lib/auth";
+import styles from "./manager.module.css";
+type Concept = { id?:number; name:string; key:string };
+type Topic = { id?:number; name:string; concepts:Concept[]; key:string };
+type Chapter = { id?:number; name:string; topics:Topic[]; key:string };
+type RawChapter = { id?:number; name:string; topics:{ id?:number; name:string; concepts:{ id?:number; name:string }[] }[] };
+type Library = { subjectId:number; gradeNumber:number; revision:number; exists:boolean; chapters:RawChapter[] };
+type Sheet = { name:string; chapters:RawChapter[]; warnings:string[] };
+const decorate = (rows:RawChapter[]):Chapter[] => rows.map(c => ({ ...c,key:crypto.randomUUID(),topics:c.topics.map(t => ({ ...t,key:crypto.randomUUID(),concepts:t.concepts.map(x => ({ ...x,key:crypto.randomUUID() })) })) }));
+function move<T>(items:T[], i:number, d:number) { const next=[...items]; if(i+d<0||i+d>=items.length)return next; [next[i],next[i+d]]=[next[i+d],next[i]]; return next; }
+export default function ManagerCurriculum() {
+ const router=useRouter();
+ const [ready,setReady]=useState(false),[subjects,setSubjects]=useState<{id:number;name:string}[]>([]);
+ const [subjectId,setSubjectId]=useState(""),[grade,setGrade]=useState("11");
+ const [library,setLibrary]=useState<Library|null>(null),[chapters,setChapters]=useState<Chapter[]>([]);
+ const [sheets,setSheets]=useState<Sheet[]>([]),[sheetIndex,setSheetIndex]=useState(0);
+ const [busy,setBusy]=useState(false),[dirty,setDirty]=useState(false);
+ const [error,setError]=useState(""),[message,setMessage]=useState(""),[newSubject,setNewSubject]=useState("");
+ useEffect(()=>{ if(getAccountType()!=="manager"){router.replace("/manager/login");return;} let cancelled=false;
+ api.get<{id:number;name:string}[]>("/manager/subjects").then(rows=>{if(!cancelled){setSubjects(rows);setSubjectId(String(rows[0]?.id??""));setReady(true);}}).catch(e=>{if(!cancelled){setError(e.message);setReady(true);}});return()=>{cancelled=true;}; },[router]);
+ useEffect(()=>{if(!dirty)return;const warn=(e:BeforeUnloadEvent)=>{e.preventDefault();};window.addEventListener("beforeunload",warn);return()=>window.removeEventListener("beforeunload",warn);},[dirty]);
+ const discard=()=>!dirty||window.confirm("Discard unsaved curriculum edits?");
+ function change(fn:(items:Chapter[])=>Chapter[]){setChapters(items=>fn(structuredClone(items)));setDirty(true);setMessage("");}
+ async function load(){if(!discard())return;setBusy(true);setError("");setMessage("");try{const result=await api.get<Library>("/manager/curricula/"+subjectId+"/"+grade);setLibrary(result);setChapters(decorate(result.chapters));setDirty(false);setSheets([]);}catch(e){setError(e instanceof Error?e.message:"Could not load curriculum");}finally{setBusy(false);}}
+ async function upload(file:File){if(!discard())return;if(library?.exists&&!window.confirm("Review this spreadsheet as a replacement for the saved curriculum? Nothing changes until you save. Existing lesson history will be retained."))return;setBusy(true);setError("");setMessage("");try{const form=new FormData();form.append("file",file);const result=await api.upload<{sheets:Sheet[]}>("/manager/curricula/preview",form);setSheets(result.sheets);setSheetIndex(0);setChapters(decorate(result.sheets[0].chapters));setDirty(true);setMessage("Preview only. Edit labels below, then save.");}catch(e){setError(e instanceof Error?e.message:"Could not read workbook");}finally{setBusy(false);}}
+ async function save(){if(!library)return;setBusy(true);setError("");setMessage("");try{const result=await api.post<Library>("/manager/curricula",{subjectId:library.subjectId,gradeNumber:library.gradeNumber,revision:library.revision,chapters});setLibrary(result);setChapters(decorate(result.chapters));setDirty(false);setSheets([]);setMessage("Curriculum saved. Continue editing or load another subject and grade.");}catch(e){setError(e instanceof Error?e.message:"Could not save curriculum");}finally{setBusy(false);}}
+ return <main className={styles.page}>
+ <header className={styles.header}><div><h1>Curriculum manager</h1><p>Upload → review labels and order → save to a subject and grade.</p></div><button disabled={busy} onClick={async()=>{if(!discard())return;const token=localStorage.getItem("refreshToken");if(token)await api.post("/auth/logout",{refreshToken:token}).catch(()=>{});logout();router.replace("/manager/login");}}>Sign out</button></header>
+ {error&&<p role="alert" className={styles.error}>{error}</p>}{message&&<p role="status" className={styles.success}>{message}</p>}
+ {!ready?<p>Loading…</p>:<fieldset disabled={busy} style={{border:0,padding:0,margin:0}}>
+ <section className={styles.panel}><div className={styles.toolbar}>
+ <label>Subject<select value={subjectId} onChange={e=>setSubjectId(e.target.value)}><option value="" disabled>Select a subject</option>{subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+ <label>Grade<select value={grade} onChange={e=>setGrade(e.target.value)}>{[8,9,10,11,12].map(n=><option key={n} value={n}>Grade {n}</option>)}</select></label>
+ <button disabled={!subjectId} onClick={load}>Load curriculum</button></div>
+ <form className={styles.toolbar} style={{marginTop:16}} onSubmit={async e=>{e.preventDefault();setBusy(true);setError("");try{const result=await api.post<{id:number;name:string}>("/manager/subjects",{name:newSubject});setSubjects(items=>[...items,result].sort((a,b)=>a.name.localeCompare(b.name)));setSubjectId(String(result.id));setNewSubject("");}catch(err){setError(err instanceof Error?err.message:"Could not add subject");}finally{setBusy(false);}}}><label>New subject<input value={newSubject} onChange={e=>setNewSubject(e.target.value)} maxLength={120} required/></label><button>Add subject to catalog</button></form></section>
+ {library&&<><section className={styles.panel}><h2>{subjects.find(s=>s.id===library.subjectId)?.name} · Grade {library.gradeNumber}</h2>
+ {library.exists&&<p>{sheets.length?"Reviewing a replacement spreadsheet. Saving retires the previous curriculum entries; existing lesson history is retained.":"Editing saved curriculum. Renames keep existing records; replacement creates a new concept. Removed entries leave the curriculum and remain linked to existing lesson history."}</p>}<p>Row 1: chapter labels. Row 2: topic labels. Rows 3 onward: concepts. Repeat a chapter label for each of its topic columns. Blank concept cells are skipped. Upload .xlsx or .csv, up to 2 MB.</p><label>Upload spreadsheet<input type="file" accept=".xlsx,.csv" onChange={e=>{const file=e.target.files?.[0];e.target.value="";if(file)void upload(file);}}/></label>
+ {sheets.length>1&&<label>Worksheet<select value={sheetIndex} onChange={e=>{if(!discard())return;const i=Number(e.target.value);setSheetIndex(i);setChapters(decorate(sheets[i].chapters));setDirty(true);}}>{sheets.map((s,i)=><option key={i} value={i}>{s.name}</option>)}</select></label>}
+
+ {sheets[sheetIndex]?.warnings.map((warning,i)=><p key={i} role="status" className={styles.warning}>{warning}</p>)}
+ <p>{chapters.length} chapters · {chapters.reduce((n,c)=>n+c.topics.length,0)} topics · {chapters.reduce((n,c)=>n+c.topics.reduce((sum,t)=>sum+t.concepts.length,0),0)} concepts{dirty?" · Unsaved changes":""}</p>
+ <div className={styles.toolbar}><button onClick={()=>change(items=>[...items,{name:"",topics:[],key:crypto.randomUUID()}])}>Add chapter</button><button className={styles.primary} disabled={!dirty||!chapters.length} onClick={save}>{busy?"Working…":"Save curriculum"}</button></div></section>
+ <div className={styles.chapters}>{chapters.map((chapter,i)=><section className={styles.chapter} key={chapter.key}>
+ <label>Chapter {i+1}<textarea value={chapter.name} maxLength={1000} onChange={e=>change(items=>{items[i].name=e.target.value;return items;})}/></label>
+ <div className={styles.actions}><button disabled={i===0} onClick={()=>change(items=>move(items,i,-1))}>Move up</button><button disabled={i===chapters.length-1} onClick={()=>change(items=>move(items,i,1))}>Move down</button><button onClick={()=>{if(window.confirm("Remove this chapter, its topics and concepts from the curriculum?"))change(items=>items.filter((_,j)=>j!==i));}}>Remove chapter</button>
+ {!chapter.id&&chapters.some((c,j)=>j!==i&&!c.id)&&<label>Combine into chapter<select aria-label={"Combine chapter "+(i+1)} value="" onChange={e=>{const destination=e.target.value;if(!destination)return;change(items=>{const target=items.find(c=>c.key===destination)!;target.topics=items.findIndex(c=>c.key===destination)>i?[...items[i].topics,...target.topics]:[...target.topics,...items[i].topics];return items.filter(c=>c.key!==chapter.key);});}}><option value="">Choose destination…</option>{chapters.filter(c=>c.key!==chapter.key&&!c.id).map(c=><option key={c.key} value={c.key}>{c.name||"Untitled chapter"}</option>)}</select></label>}
+ </div>
+ <div className={styles.grid}>{chapter.topics.map((topic,j)=><section className={styles.topic} key={topic.key}>
+ <label>Topic {j+1}<textarea value={topic.name} maxLength={1000} onChange={e=>change(items=>{items[i].topics[j].name=e.target.value;return items;})}/></label>
+ <div className={styles.actions}><button disabled={j===0} onClick={()=>change(items=>{items[i].topics=move(items[i].topics,j,-1);return items;})}>Move left</button><button disabled={j===chapter.topics.length-1} onClick={()=>change(items=>{items[i].topics=move(items[i].topics,j,1);return items;})}>Move right</button><button onClick={()=>{if(window.confirm("Remove this topic and its concepts?"))change(items=>{items[i].topics.splice(j,1);return items;});}}>Remove topic</button></div>
+ {topic.concepts.map((concept,k)=><div className={styles.concept} key={concept.key}><label>Concept {k+1}<textarea value={concept.name} maxLength={1000} onChange={e=>change(items=>{items[i].topics[j].concepts[k].name=e.target.value;return items;})}/></label>
+ <div className={styles.actions}><button disabled={k===0} onClick={()=>change(items=>{items[i].topics[j].concepts=move(items[i].topics[j].concepts,k,-1);return items;})}>Up</button><button disabled={k===topic.concepts.length-1} onClick={()=>change(items=>{items[i].topics[j].concepts=move(items[i].topics[j].concepts,k,1);return items;})}>Down</button><button onClick={()=>change(items=>{items[i].topics[j].concepts.splice(k+1,0,{name:"",key:crypto.randomUUID()});return items;})}>Insert after</button>
+ {concept.id&&<button onClick={()=>{if(window.confirm("Replace with a new concept? Existing lessons keep the old record."))change(items=>{items[i].topics[j].concepts[k]={name:"",key:crypto.randomUUID()};return items;});}}>Replace</button>}
+ <button onClick={()=>change(items=>{items[i].topics[j].concepts.splice(k,1);return items;})}>Remove</button></div></div>)}
+ <button onClick={()=>change(items=>{items[i].topics[j].concepts.push({name:"",key:crypto.randomUUID()});return items;})}>Add concept</button></section>)}</div>
+ <button className={styles.addTopic} onClick={()=>change(items=>{items[i].topics.push({name:"",concepts:[],key:crypto.randomUUID()});return items;})}>Add topic</button></section>)}</div></>}
+ </fieldset>}</main>;
+}

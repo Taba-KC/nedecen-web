@@ -6,8 +6,6 @@ import { api } from "@/lib/api";
 import { getSchoolId } from "@/lib/auth";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { BottomSheet } from "@/components/shared/BottomSheet";
-import { FloatingLabelSelect } from "@/components/shared/FloatingLabelSelect";
 import { GradeRow } from "@/components/principal/GradeRow";
 
 interface Grade {
@@ -15,23 +13,12 @@ interface Grade {
   number: number;
 }
 
-const ALL_NUMBERS = [8, 9, 10, 11, 12];
-
 export default function GradesPage() {
   const router = useRouter();
   const [grades, setGrades] = useState<Grade[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
-  const [selectedNumber, setSelectedNumber] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
   const sortedGrades = [...grades].sort((a, b) => a.number - b.number);
-  const availableOptions = ALL_NUMBERS
-    .filter((n) => !grades.some((g) => g.number === n))
-    .map((n) => ({ value: String(n), label: `Grade ${n}` }));
-
   useEffect(() => {
     const schoolId = getSchoolId();
     if (!schoolId) { router.replace("/"); return; }
@@ -46,42 +33,11 @@ export default function GradesPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  function handleOpen() {
-    setSelectedNumber("");
-    setSubmitError(null);
-    setFormOpen(true);
-  }
-
-  function handleClose() {
-    setFormOpen(false);
-    setSelectedNumber("");
-    setSubmitError(null);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedNumber) return;
-    const schoolId = getSchoolId();
-    if (!schoolId) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      await api.post(`/schools/${schoolId}/grades`, { number: parseInt(selectedNumber, 10) });
-      const updated = await api.get<Grade[]>(`/schools/${schoolId}/grades`);
-      setGrades(updated);
-      handleClose();
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to create grade. Try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   return (
     <>
       {/* ── Mobile / tablet ──────────────────────────────────────────────────── */}
-      <div className="lg:hidden py-6">
-        <div className="sm:max-w-xl sm:mx-auto">
+      <div className="lg:hidden h-full overflow-y-auto px-4 pb-28 pt-4 sm:px-7">
+        <div className="mx-auto max-w-3xl">
           <div>
             <PageHeader title="Grades & Classes" />
 
@@ -104,65 +60,52 @@ export default function GradesPage() {
                 </button>
               </div>
             ) : sortedGrades.length === 0 ? (
-              <EmptyState message="No grades yet. Tap + to add the first grade." />
+              <EmptyState message="Grades could not be loaded. Please refresh." />
             ) : (
-              sortedGrades.map((grade, i) => (
-                <GradeRow
-                  key={grade.id}
-                  grade={grade}
-                  isLast={i === sortedGrades.length - 1}
-                />
-              ))
+              <div className="grid grid-cols-1 gap-4 pt-5 sm:grid-cols-2">
+                {sortedGrades.map((grade) => (
+                  <GradeRow
+                    key={grade.id}
+                    grade={grade}
+                  />
+                ))}
+              </div>
             )}
           </div>
         </div>
       </div>
 
       {/* ── Desktop: right panel (sidebar is in grades/layout.tsx) ──────────── */}
-      <div className="hidden lg:flex items-center justify-center flex-1">
-        <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
-          Select a grade to view and manage its classes.
-        </p>
+      <div className="hidden lg:flex flex-1 min-h-0 items-center justify-center overflow-y-auto px-6 py-8">
+        <div className="glass-panel grade-glass-card w-full max-w-[400px] rounded-[12px] px-8 py-8 text-center" role="status">
+          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl" style={{ backgroundColor: "var(--color-accent-muted)", color: "var(--color-accent)" }}>
+            {loading ? (
+              <span className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m10 6-6 6 6 6M4 12h16" />
+              </svg>
+            )}
+          </div>
+          <h2 className="text-lg font-semibold" style={{ color: "var(--color-text)" }}>
+            {loading ? "Loading grades" : error ? "Couldn't load grades" : sortedGrades.length === 0 ? "Grades unavailable" : "Choose a grade"}
+          </h2>
+          <p className="mt-3 text-sm leading-6" style={{ color: "var(--color-text-muted)" }}>
+            {loading ? "Your school structure will appear shortly." : error ? error : sortedGrades.length === 0 ? "Please refresh to load your school grades." : "Select a grade from the sidebar to see its classes."}
+          </p>
+          {!loading && !!error && (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-5 rounded-full px-5 py-2.5 text-sm font-semibold"
+              style={{ backgroundColor: "var(--grade-action-bg, var(--color-school-black))", color: "#fff" }}
+            >
+              Retry
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ── Bottom sheet — mobile / tablet ───────────────────────────────────── */}
-      <BottomSheet isOpen={formOpen} onClose={handleClose} title="Add grade">
-        <form onSubmit={handleSubmit} className="flex flex-col" style={{ gap: "var(--field-gap)" }}>
-          <FloatingLabelSelect
-            id="grade-number-mobile"
-            label="Grade number"
-            value={selectedNumber}
-            onChange={setSelectedNumber}
-            options={availableOptions}
-            required
-          />
-          {submitError && (
-            <p className="text-sm" style={{ color: "var(--color-accent)" }}>
-              {submitError}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={!selectedNumber || submitting}
-            className="w-full text-sm font-bold rounded-lg disabled:opacity-50"
-            style={{ height: "var(--control-height)", backgroundColor: "var(--color-accent)", color: "#fff" }}
-          >
-            {submitting ? "Creating..." : "Create grade"}
-          </button>
-        </form>
-      </BottomSheet>
-
-      {/* ── Floating + button — mobile / tablet ──────────────────────────────── */}
-      {availableOptions.length > 0 && !formOpen && !loading && (
-        <button
-          onClick={handleOpen}
-          className="lg:hidden fixed right-6 bottom-24 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl font-light"
-          style={{ backgroundColor: "var(--color-accent)", color: "#fff" }}
-          aria-label="Add grade"
-        >
-          +
-        </button>
-      )}
     </>
   );
 }

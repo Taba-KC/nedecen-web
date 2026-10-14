@@ -4,29 +4,18 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { getSchoolId } from "@/lib/auth";
-import { FloatingLabelSelect } from "@/components/shared/FloatingLabelSelect";
 
 interface Grade {
   id: number;
   number: number;
 }
 
-const ALL_NUMBERS = [8, 9, 10, 11, 12];
-
 export function GradesSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [grades, setGrades] = useState<Grade[]>([]);
   const [loading, setLoading] = useState(true);
-  const [formOpen, setFormOpen] = useState(false);
-  const [selectedNumber, setSelectedNumber] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
   const sortedGrades = [...grades].sort((a, b) => a.number - b.number);
-  const availableOptions = ALL_NUMBERS
-    .filter((n) => !grades.some((g) => g.number === n))
-    .map((n) => ({ value: String(n), label: `Grade ${n}` }));
 
   const match = pathname.match(/\/grades\/(\d+)/);
   const activeGradeId = match ? parseInt(match[1], 10) : null;
@@ -40,157 +29,76 @@ export function GradesSidebar() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  function openForm() {
-    setSelectedNumber("");
-    setSubmitError(null);
-    setFormOpen(true);
-  }
-
-  function closeForm() {
-    setFormOpen(false);
-    setSelectedNumber("");
-    setSubmitError(null);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedNumber) return;
-    const schoolId = getSchoolId();
-    if (!schoolId) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      await api.post(`/schools/${schoolId}/grades`, { number: parseInt(selectedNumber, 10) });
-      const updated = await api.get<Grade[]>(`/schools/${schoolId}/grades`);
-      setGrades(updated);
-      closeForm();
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to create grade.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   return (
-    <aside
-      className="hidden lg:flex flex-col w-64 flex-shrink-0 p-4"
-      style={{ minHeight: "calc(100vh - 64px)" }}
-    >
-      {/* Floating card */}
+    <aside className="hidden lg:block w-[240px] xl:w-[290px] flex-shrink-0">
       <div
-        className="rounded-2xl overflow-hidden flex flex-col"
+        className="glass-panel grade-sidebar min-h-[440px] rounded-[22px] overflow-hidden flex flex-col py-6"
         style={{
-          border: "1px solid var(--color-border)",
-          backgroundColor: "var(--color-card)",
-          boxShadow: "0 2px 16px rgba(0, 0, 0, 0.08)",
+          backgroundColor: "var(--color-school-panel)",
+          border: "1px solid rgba(37, 37, 37, 0.06)",
+          boxShadow: "0 12px 26px rgba(17, 17, 17, 0.14)",
         }}
       >
-        {/* Card heading */}
-        <div
-          className="px-5 py-4 flex-shrink-0"
-          style={{ borderBottom: "1px solid var(--color-border)" }}
-        >
-          <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: "var(--color-text-muted)" }}>
-            Grades
-          </p>
+        <div className="sidebar-heading px-5 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <span className="sidebar-school-icon" aria-hidden="true">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m2 9 10-5 10 5-10 5L2 9Z" />
+                <path d="M6 11v6c3 3 9 3 12 0v-6M22 9v7" />
+              </svg>
+            </span>
+            <div>
+              <p className="text-[16px] font-semibold" style={{ color: "var(--color-school-black)" }}>Grades &amp; Classes</p>
+              <p className="mt-0.5 text-[11px]" style={{ color: "var(--color-text-muted)" }}>School administration</p>
+            </div>
+          </div>
+          <div className="sidebar-divider mt-5" />
+          <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--color-text-muted)" }}>Your grades</p>
         </div>
 
-        {/* Grade list */}
-        <div className="flex-1 overflow-y-auto px-3 py-2">
+        <div className="mt-3 flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center py-10">
               <div
                 className="w-4 h-4 rounded-full border-2 animate-spin"
                 style={{ borderColor: "var(--color-border)", borderTopColor: "var(--color-accent)" }}
               />
             </div>
           ) : sortedGrades.length === 0 ? (
-            <p className="px-2 py-4 text-xs" style={{ color: "var(--color-text-muted)" }}>
-              No grades yet.
+            <p className="px-2 py-4 text-sm" style={{ color: "var(--color-text-muted)" }}>
+              Grades could not be loaded. Please refresh.
             </p>
           ) : (
             <div className="flex flex-col gap-1">
               {sortedGrades.map((grade) => {
                 const active = grade.id === activeGradeId;
                 return (
-                  <button
+                  <div
                     key={grade.id}
-                    onClick={() => router.push(`/dashboard/principal/grades/${grade.id}`)}
-                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-left transition-colors"
-                    style={
-                      active
-                        ? {
-                            backgroundColor: "var(--color-primary)",
-                            color: "#ffffff",
-                          }
-                        : {
-                            backgroundColor: "var(--color-surface)",
-                            color: "var(--color-text)",
-                          }
-                    }
+                    className="glass-grade-item group flex items-center transition-colors"
+                    style={{ backgroundColor: active ? "var(--color-school-panel-active)" : "transparent" }}
                   >
-                    <span className="text-sm font-medium">Grade {grade.number}</span>
-                    {active && (
-                      <span className="text-base font-semibold" style={{ color: "#ffffff" }}>›</span>
-                    )}
-                  </button>
+                    <button
+                      aria-current={active ? "page" : undefined}
+                      onClick={() => router.push(`/dashboard/principal/grades/${grade.id}`)}
+                      className="min-w-0 flex-1 flex items-center gap-3 px-5 py-3 text-left text-[14px] leading-6 font-medium"
+                      style={{ color: active ? "var(--color-accent)" : "var(--color-school-black)" }}
+                    >
+                      <span className="sidebar-grade-icon" aria-hidden="true">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="4" y="3" width="16" height="18" rx="3" />
+                          <path d="M8 8h8M8 12h8M8 16h4" />
+                        </svg>
+                      </span>
+                      Grade {grade.number}
+                    </button>
+                  </div>
                 );
               })}
             </div>
           )}
         </div>
 
-        {/* Add grade */}
-        {availableOptions.length > 0 && (
-          <>
-            <div className="mx-4" style={{ height: "1px", backgroundColor: "var(--color-border)" }} />
-            <div className="px-4 py-4 flex-shrink-0">
-              {!formOpen ? (
-                <button
-                  onClick={openForm}
-                  className="w-full text-sm font-semibold py-2.5 rounded-lg transition-all"
-                  style={{ backgroundColor: "var(--color-accent)", color: "#fff" }}
-                >
-                  + Add grade
-                </button>
-              ) : (
-                <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-                  <FloatingLabelSelect
-                    id="sidebar-grade-number"
-                    label="Grade number"
-                    value={selectedNumber}
-                    onChange={setSelectedNumber}
-                    options={availableOptions}
-                    required
-                  />
-                  {submitError && (
-                    <p className="text-xs" style={{ color: "var(--color-accent)" }}>
-                      {submitError}
-                    </p>
-                  )}
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={closeForm}
-                      className="flex-1 text-sm py-2 rounded-lg transition-all"
-                      style={{ border: "1.5px solid var(--color-border)", color: "var(--color-text-muted)" }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={!selectedNumber || submitting}
-                      className="flex-1 text-sm font-semibold py-2 rounded-lg disabled:opacity-50 transition-all"
-                      style={{ backgroundColor: "var(--color-accent)", color: "#fff" }}
-                    >
-                      {submitting ? "..." : "Create"}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          </>
-        )}
       </div>
     </aside>
   );

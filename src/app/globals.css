@@ -1,13 +1,271 @@
 @import "tailwindcss";
 
+/* Shared principal dashboard theme, independent of the global theme. */
+.grades-glass {
+  --grades-grid-gap: 12px;
+  --color-background: #171717;
+  --color-text: #f3f2f5;
+  --color-text-muted: #b8b9c3;
+  --color-school-black: #f3f2f5;
+  --color-school-charcoal: #d3d3dc;
+  --color-school-grey: #b8b9c3;
+  --color-school-panel: rgba(255, 255, 255, 0.08);
+  --color-school-panel-active: rgba(160, 53, 67, 0.24);
+  --color-card: rgba(30, 30, 30, 0.82);
+  --color-surface: rgba(255, 255, 255, 0.08);
+  --color-border: rgba(225, 225, 240, 0.18);
+  --color-accent: #ef969d;
+  --color-accent-muted: rgba(171, 38, 49, 0.35);
+  --color-focus: #ffc0c5;
+  --grade-action-bg: rgba(160, 35, 49, 0.70);
+  background: #171717 !important;
+  color: var(--color-text);
+  color-scheme: dark;
+}
+
+.grades-glass > .pointer-events-none { display: none; }
+
+.grades-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 0% 0%, #ffffff08, transparent 65%),
+    radial-gradient(ellipse at 100% 100%, #5c20241a, transparent 65%),
+    linear-gradient(135deg, #262626 0%, #1b1b1b 50%, #121212 100%);
+}
+
+.grades-glass > :not(.grades-backdrop):not(.pointer-events-none) {
+  position: relative;
+  z-index: 1;
+}
+/* Preserve the positioning of the tablet sidebar and mobile navigation. */
+.grades-glass > .fixed { position: fixed !important; z-index: 20 !important; }
+
+.grades-glass .glass-panel {
+  background: linear-gradient(135deg, #ffffff0d, #ffffff02 65%), rgba(30, 30, 30, 0.78) !important;
+  border: 1px solid transparent !important;
+  box-shadow: inset 0 2px 3px #ffffff0a, inset 0 -4px 6px #00000026,
+    0 3px 5px #00000038, 0 16px 32px #00000059 !important;
+  backdrop-filter: blur(28px) saturate(85%);
+  -webkit-backdrop-filter: blur(28px) saturate(85%);
+  overflow: hidden;
+}
+
+.grades-glass .glass-panel:not(.fixed) { position: relative; }
+
+/* A light diagonal haze keeps the cards glassy over the smooth backdrop. */
+.grades-glass .glass-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #ffffff10, #ffffff02 75%);
+  pointer-events: none;
+}
+.grades-glass .glass-panel > * {
+  position: relative;
+  z-index: 1;
+}
+.grades-glass .glass-panel:not(.glass-utility-bar) {
+  background: linear-gradient(135deg, #ffffff0b, #ffffff02 65%), #1b1b1bb8 !important;
+  box-shadow: inset 0 1px 2px #ffffff0a, inset 0 -2px 4px #00000026,
+    0 8px 22px #0000004d !important;
+}
+.grades-glass .glass-panel:is(.class-glass-card, .glass-create-card, .subject-glass-card, .staff-glass-card, .announcement-glass-card) {
+  background: linear-gradient(135deg, #ffffff14, #ffffff02 75%), #1c1c1c80 !important;
+}
+/* Sidebars are opaque charcoal, including tablet and mobile equivalents. */
+.grades-glass .glass-panel:is(.principal-sidebar, .grade-sidebar, .stream-sidebar, .stream-mobile-panel, .staff-sidebar, .announcement-sidebar) {
+  background: #242424 !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.grades-glass .glass-panel:is(.principal-sidebar, .grade-sidebar, .stream-sidebar, .stream-mobile-panel, .staff-sidebar, .announcement-sidebar)::before {
+  content: none;
+}
+.grades-glass .class-create-icon {
+  color: #f7eded;
+  background: linear-gradient(145deg, #a6192873, #75132399);
+  border: 1px solid #c7777f30;
+  box-shadow: 0 0 20px #8b000026, inset 0 1px 0 #ffffff12;
+}
+
+/* Uniform, very faint grey outlines for the glass surfaces. */
+.grades-glass .glass-panel::after,
+.grades-glass .glass-field::after,
+.grades-glass .glass-control::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  border: 1px solid rgba(180, 180, 180, 0.12);
+  pointer-events: none;
+}
+
+/* Give principal dialogs clear separation from the dashboard behind them. */
+.grades-glass .modal-backdrop[data-open="true"] {
+  background-color: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.grades-glass .glass-panel.modal-panel {
+  background: linear-gradient(135deg, #ffffff08, transparent 70%), #242424f5 !important;
+}
+.grades-glass .class-subject-heading label[for] { background: transparent !important; }
+
+.grades-glass header { background: transparent; }
+.grades-glass .grade-sidebar { height: 100%; min-height: 0; border-radius: 12px; }
+.grades-glass .sidebar-school-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  color: #f0c5c9;
+  background: linear-gradient(135deg, #a619288c, #75132366);
+  box-shadow: inset 0 1px 0 #ffffff25;
+}
+.grades-glass .sidebar-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #ffffff40, transparent);
+}
+.grades-glass .sidebar-grade-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  color: #d0d0d9;
+  background: #ffffff09;
+}
+.grades-glass .glass-grade-item { border: 0; border-radius: 0; }
+.grades-glass .glass-grade-item:has([aria-current="page"]) {
+  background: linear-gradient(90deg, #a619287d, #8b17244d) !important;
+  box-shadow: inset 0 1px 0 #ffffff15, inset 0 -1px 0 #00000018;
+}
+.grades-glass .glass-grade-item:has([aria-current="page"]) button { color: #fff !important; }
+.grades-glass .glass-grade-item:has([aria-current="page"]) .sidebar-grade-icon { color: #fff; background: #ffffff20; }
+.grades-glass .glass-grade-item:hover { background: #ffffff08; }
+.grades-glass .glass-nav-item { border: 1px solid transparent; }
+.grades-glass .glass-nav-item[aria-current="page"] {
+  border-color: #ef969d40;
+  box-shadow: inset 0 1px 0 #ffffff1a, 0 4px 12px #00000020;
+}
+.grades-glass button,
+.grades-glass a { transition: background-color .18s, border-color .18s, box-shadow .18s, transform .18s; }
+.grades-glass button:not(:disabled):hover,
+.grades-glass .glass-nav-item:hover { background-color: #ffffff10; }
+.grades-glass :is(button, a, input, select):focus-visible {
+  outline: 2px solid #ffc0c5;
+  outline-offset: 3px;
+}
+.grades-glass button[style*="--grade-action-bg"],
+.grades-glass button[style*="background-color: var(--color-accent)"] {
+  background: linear-gradient(135deg, #b3344780, #8a2032b3) !important;
+  border: 1px solid #ee9ca547;
+  box-shadow: inset 0 1px 0 #ffffff20, 0 6px 18px #00000026 !important;
+  backdrop-filter: blur(12px);
+}
+.grades-glass .class-glass-card,
+.grades-glass .glass-create-card,
+.grades-glass .grade-glass-card { border-radius: 12px; }
+.grades-glass .class-glass-card:hover { transform: translateY(-3px); }
+.grades-glass .glass-create-card:hover {
+  box-shadow: inset 0 2px 3px #ffffff0a, inset 0 -4px 6px #00000026,
+    0 3px 5px #00000038, 0 16px 32px #661b263d !important;
+}
+.grades-glass input,
+.grades-glass select { color-scheme: dark; }
+.grades-glass .glass-field {
+  position: relative;
+  background: #ffffff06 !important;
+  border-color: transparent !important;
+  box-shadow: inset 0 1px 3px #ffffff0a, inset 0 -2px 4px #00000026;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.grades-glass :is(.staff-filter-select, .learner-filter-select, .announcement-filter-select, .subject-teacher-select) {
+  appearance: none;
+  background: #ffffff06 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23d3d3dc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 14px 14px !important;
+}
+
+.grades-glass .glass-field:focus-within { outline: 1px solid var(--color-focus); }
+.grades-glass .glass-control {
+  position: relative;
+  border-color: transparent !important;
+  background: linear-gradient(180deg, #ffffff0c, #ffffff03);
+  box-shadow: inset 0 1px 2px #ffffff0a, inset 0 -2px 3px #0000001f,
+    0 3px 6px #00000026;
+}
+.grades-glass :is(.class-glass-card, .subject-glass-card, .staff-glass-card, .announcement-glass-card) .glass-control {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  box-shadow: none;
+}
+.grades-glass :is(.class-glass-card, .subject-glass-card, .staff-glass-card, .announcement-glass-card) .glass-control::after { content: none; }
+.grades-glass :is(.class-glass-card, .subject-glass-card, .staff-glass-card, .announcement-glass-card) .glass-control:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.20) !important;
+}
+.grades-glass option { background: #292a32 !important; color: #f3f2f5; }
+.grades-glass label[for] { background: #292a32 !important; }
+.grades-glass * { scrollbar-width: thin; scrollbar-color: #ffffff30 transparent; }
+
+@media (min-width: 1024px) {
+  .grades-glass header {
+    height: auto;
+    align-items: center;
+    padding-top: 24px;
+    padding-bottom: var(--grades-grid-gap);
+  }
+  .grades-glass header > nav,
+  .grades-glass header > .glass-utility-bar {
+    min-height: 46px;
+    padding: 4px;
+  }
+  .grades-glass header .glass-nav-item {
+    display: flex;
+    align-items: center;
+    min-height: 36px;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .grades-glass header { padding-inline: 24px; gap: 16px; }
+  .grades-glass .glass-nav-item { padding-inline: 12px; font-size: 12px; }
+}
+
+@media (max-width: 1023px) {
+  .grades-glass header {
+    background: #24252d99;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .grades-glass .grades-backdrop { position: fixed; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grades-glass *, .grades-glass *::before, .grades-glass *::after { transition: none !important; }
+}
+
 :root {
   /* Brand colours — pilot school: black and dark red */
   --color-primary: #1a1a1a;
   --color-accent: #8B0000;
   --color-accent-muted: rgba(139, 0, 0, 0.2);
+  --color-school-black: #111111;
+  --color-school-charcoal: #252525;
+  --color-school-grey: #606366;
+  --color-school-panel: #e1e2e2;
+  --color-school-panel-active: #d3d5d5;
 
   /* Surfaces */
   --color-background: #ffffff;
+  --color-dashboard-canvas: rgba(37, 37, 37, 0.05);
   --color-surface: #f4f4f4;
   --color-canvas: #f3f4f6;
   --color-card: #ffffff;
@@ -91,10 +349,25 @@
 
   html,
   body {
-    height: 100%;
     font-family: var(--font-geist-sans), sans-serif;
     background-color: var(--color-background);
     color: var(--color-text);
     transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  html { min-height: 100%; }
+
+  /* Let every page grow with its content instead of overflowing a viewport-tall body. */
+  body { min-height: 100dvh; height: auto; }
+}
+
+@layer components {
+  .principal-pill-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 5.25L7 8.75L10.5 5.25' stroke='%23111111' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-position: right 1.35rem center;
+    background-repeat: no-repeat;
+    background-size: 14px 14px;
   }
 }

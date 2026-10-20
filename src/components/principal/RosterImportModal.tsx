@@ -9,9 +9,10 @@ type Row = { title: string; firstName: string; surname: string; identifier: stri
 type EditableRow = Row & { key: number };
 interface Preview { rows: Row[]; existingIdentifiers: string[] }
 
-export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptions = [], initialClassId = "", fixedClass = false }: {
+export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptions = [], initialClassId = "", fixedClass = false, inline = false }: {
   schoolId: number; kind: "staff" | "learners"; onClose: () => void; onSaved: () => Promise<void>;
   classOptions?: { value: string; label: string }[]; initialClassId?: string; fixedClass?: boolean;
+  inline?: boolean;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [classId, setClassId] = useState(initialClassId);
@@ -20,6 +21,7 @@ export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptio
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<number | null>(null);
+  const [skipped, setSkipped] = useState(0);
   const mounted = useRef(true);
   const inFlight = useRef(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -57,7 +59,10 @@ export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptio
       const data = new FormData(); data.append("file", file);
       const result = await api.upload<Preview>(base + "/preview", data);
       if (!mounted.current) return;
-      setRows(result.rows.map((row, key) => ({ ...row, key })));
+      const existingNumbers = new Set(result.existingIdentifiers.map(value => value.trim().toLowerCase()));
+      const newRows = inline ? result.rows.filter(row => !existingNumbers.has(row.identifier.trim().toLowerCase())) : result.rows;
+      setSkipped(result.rows.length - newRows.length);
+      setRows(newRows.map((row, key) => ({ ...row, key })));
       setExisting(result.existingIdentifiers);
     } catch (err) { if (mounted.current) setError(err instanceof Error ? err.message : "Could not preview spreadsheet."); }
     finally { inFlight.current = false; if (mounted.current) setBusy(false); }
@@ -74,7 +79,7 @@ export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptio
     finally { inFlight.current = false; if (mounted.current) setBusy(false); }
   }
   const buttonStyle = { height: "var(--control-height)", backgroundColor: "var(--grade-action-bg)", color: "#ffffff" };
-  return <BottomSheet isOpen onClose={() => { if (!inFlight.current) onClose(); }} width={rows && saved === null ? "xl" : "md"} title={saved !== null ? "Import complete" : rows ? "Review " + kind : "Import " + kind}>
+  const content = <>
     {kind === "learners" && target && <p className="mb-4 text-sm font-semibold" style={{ color: "var(--color-text)" }}>Adding to {target}</p>}
     {error && <p role="alert" className="mb-4 text-sm" style={{ color: "var(--color-accent)" }}>{error}</p>}
     {saved !== null ? <div className="space-y-4">
@@ -82,10 +87,10 @@ export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptio
       <button type="button" onClick={onClose} disabled={busy} className="w-full rounded-lg text-sm font-bold disabled:opacity-50" style={buttonStyle}>Done</button>
     </div> : rows ? <div>
       <p className="mb-3 text-sm" style={{ color: "var(--color-text-muted)" }}>Nothing has been saved yet. Edit any cell or remove rows before saving.</p>
-      <p role="status" className="mb-4 text-sm">{rows.length} rows · {invalid ? invalid + " need attention" : "Ready to save"}</p>
+      <p role="status" className="mb-4 text-sm">{rows.length} rows · {invalid ? invalid + " need attention" : "Ready to save"}{skipped > 0 && ` · ${skipped} existing records skipped`}</p>
       <div className="max-h-[50vh] overflow-auto rounded-lg border" style={{ borderColor: "var(--color-border)" }}>
         <table className="w-full min-w-[700px] text-left text-sm">
-          <thead className="sticky top-0 z-10" style={{ background: "#292929" }}><tr><th className="p-3">Row</th>{fields.map(field => <th key={field.key} className="p-3">{field.label}</th>)}<th className="p-3">Action</th></tr></thead>
+          <thead className="sticky top-0 z-10" style={{ background: inline ? "#eef0e7" : "#292929" }}><tr><th className="p-3">Row</th>{fields.map(field => <th key={field.key} className="p-3">{field.label}</th>)}<th className="p-3">Action</th></tr></thead>
           <tbody>{rows.map((row, index) => <tr key={row.key} className="border-t align-top" style={{ borderColor: "var(--color-border)" }}>
             <td className="p-3">{index + 1}</td>
             {fields.map(field => <td key={field.key} className="p-2"><input value={row[field.key]} disabled={busy} maxLength={200} aria-label={field.label + ", row " + (index + 1)} aria-invalid={issues[index]?.length ? true : undefined}
@@ -111,5 +116,6 @@ export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptio
       </label>
       <button type="submit" disabled={busy || !file || (kind === "learners" && !classId)} className="w-full rounded-lg text-sm font-bold disabled:opacity-50" style={buttonStyle}>{busy ? "Preparing preview..." : "Preview"}</button>
     </form>}
-  </BottomSheet>;
+  </>;
+  return inline ? <section className="mt-6" aria-label={"Import " + kind}>{content}</section> : <BottomSheet isOpen onClose={() => { if (!inFlight.current) onClose(); }} width={rows && saved === null ? "xl" : "md"} title={saved !== null ? "Import complete" : rows ? "Review " + kind : "Import " + kind}>{content}</BottomSheet>;
 }

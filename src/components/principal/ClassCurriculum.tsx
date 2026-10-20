@@ -9,7 +9,7 @@ interface Curriculum {
 }
 
 export function ClassCurriculum({ schoolId, classId, classSubjectId, subjectName, onBack }: {
-  schoolId: number; classId: number; classSubjectId: number; subjectName: string; onBack: () => void;
+  schoolId: number; classId: number; classSubjectId: number; subjectName: string; onBack?: () => void;
 }) {
   const [curriculum, setCurriculum] = useState<Curriculum | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export function ClassCurriculum({ schoolId, classId, classSubjectId, subjectName
 
   return (
     <section aria-label={subjectName + " curriculum"} style={{ color: "var(--color-text)" }}>
-      <button type="button" onClick={onBack} className="mb-4 text-sm hover:underline" style={{ color: "var(--color-text-muted)" }}>← Back to subjects</button>
+      {onBack && <button type="button" onClick={onBack} className="mb-4 text-sm hover:underline" style={{ color: "var(--color-text-muted)" }}>← Back to subjects</button>}
       <h3 className="text-base font-semibold">{subjectName}</h3>
       {curriculum && <p className="mt-1 mb-4 text-xs" style={{ color: "var(--color-text-muted)" }}>Grade {curriculum.gradeNumber} · Curriculum · Read only</p>}
       {error ? <div role="alert" className="mt-4 text-sm">

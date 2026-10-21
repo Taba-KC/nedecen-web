@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { BottomSheet } from "@/components/shared/BottomSheet";
 import { FloatingLabelSelect } from "@/components/shared/FloatingLabelSelect";
 
-type Row = { title: string; firstName: string; surname: string; identifier: string };
+type Row = { title?: string; firstName: string; surname: string; identifier: string };
 type EditableRow = Row & { key: number };
 interface Preview { rows: Row[]; existingIdentifiers: string[] }
 
@@ -30,7 +30,7 @@ export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptio
   const target = classOptions.find(option => option.value === classId)?.label;
   const base = "/schools/" + schoolId + (kind === "staff" ? "/people/import" : "/classes/" + classId + "/learners/import");
   const fields: { key: keyof Row; label: string }[] = [
-    { key: "title", label: "Title" }, { key: "firstName", label: "First name" }, { key: "surname", label: "Surname" }, { key: "identifier", label: numberLabel },
+    ...(kind === "staff" ? [{ key: "title" as const, label: "Title" }] : []), { key: "firstName", label: "First name" }, { key: "surname", label: "Surname" }, { key: "identifier", label: numberLabel },
   ];
   const issues = useMemo(() => {
     const existingNumbers = new Set(existing.map(value => value.trim().toLowerCase()));
@@ -38,7 +38,7 @@ export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptio
     for (const row of rows ?? []) { const id = row.identifier.trim().toLowerCase(); if (id) counts.set(id, (counts.get(id) ?? 0) + 1); }
     return (rows ?? []).map(row => {
       const errors: string[] = [];
-      if (!row.title.trim()) errors.push("Title is required");
+      if (kind === "staff" && !row.title?.trim()) errors.push("Title is required");
       if (!row.firstName.trim()) errors.push("First name is required");
       if (!row.surname.trim()) errors.push("Surname is required");
       if (!row.identifier.trim()) errors.push(numberLabel + " is required");
@@ -48,7 +48,7 @@ export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptio
       if (id && (counts.get(id) ?? 0) > 1) errors.push(numberLabel + " is repeated in this preview");
       return errors;
     });
-  }, [rows, existing, numberLabel]);
+  }, [rows, existing, numberLabel, kind]);
   const invalid = issues.filter(issue => issue.length).length;
 
   async function preview(event: React.FormEvent) {
@@ -71,7 +71,7 @@ export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptio
     if (!rows?.length || invalid || inFlight.current || saved !== null) return;
     inFlight.current = true; setBusy(true); setError(null);
     try {
-      const result = await api.post<{ saved: number }>(base + "/commit", { rows: rows.map(({ title, firstName, surname, identifier }) => ({ title, firstName, surname, identifier })) });
+      const result = await api.post<{ saved: number }>(base + "/commit", { rows: rows.map(({ title, firstName, surname, identifier }) => ({ ...(kind === "staff" ? { title } : {}), firstName, surname, identifier })) });
       if (!mounted.current) return;
       setSaved(result.saved);
       try { await onSaved(); } catch { setError("Saved successfully. Refresh the list to see the new records."); }
@@ -93,7 +93,7 @@ export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptio
           <thead className="sticky top-0 z-10" style={{ background: inline ? "#eef0e7" : "#292929" }}><tr><th className="p-3">Row</th>{fields.map(field => <th key={field.key} className="p-3">{field.label}</th>)}<th className="p-3">Action</th></tr></thead>
           <tbody>{rows.map((row, index) => <tr key={row.key} className="border-t align-top" style={{ borderColor: "var(--color-border)" }}>
             <td className="p-3">{index + 1}</td>
-            {fields.map(field => <td key={field.key} className="p-2"><input value={row[field.key]} disabled={busy} maxLength={200} aria-label={field.label + ", row " + (index + 1)} aria-invalid={issues[index]?.length ? true : undefined}
+            {fields.map(field => <td key={field.key} className="p-2"><input value={row[field.key] ?? ""} disabled={busy} maxLength={200} aria-label={field.label + ", row " + (index + 1)} aria-invalid={issues[index]?.length ? true : undefined}
               onChange={event => { const value = event.target.value; setError(null); setRows(current => current!.map(item => item.key === row.key ? { ...item, [field.key]: value } : item)); }}
               className="w-full min-w-[90px] rounded-md border bg-white/5 px-2 py-2 outline-none focus:border-white/40" style={{ color: "var(--color-text)", borderColor: issues[index]?.length ? "#ef969d80" : "var(--color-border)" }} />
               {field.key === "identifier" && issues[index]?.length > 0 && <ul className="mt-1 space-y-1 text-xs" style={{ color: "var(--color-accent)" }}>{issues[index].map(message => <li key={message}>{message}</li>)}</ul>}
@@ -109,7 +109,7 @@ export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptio
       </div>
     </div> : <form onSubmit={preview} className="flex flex-col gap-4">
       {kind === "learners" && !fixedClass && <FloatingLabelSelect id="bulk-import-class" label="Class" value={classId} onChange={setClassId} options={classOptions} disabled={busy} required />}
-      <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Columns: title, firstName, surname, {numberColumn}. Up to 500 rows and 2 MB. The first worksheet is used.</p>
+      <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>Columns: {kind === "staff" ? "title, " : ""}firstName, surname, {numberColumn}. Up to 500 rows and 2 MB. The first worksheet is used.</p>
       <label className="flex min-h-[96px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-4 text-center text-sm" style={{ borderColor: "var(--color-border)" }}>
         <input type="file" accept=".xlsx,.xls,.csv" disabled={busy} className="sr-only" onChange={event => { setFile(event.target.files?.[0] ?? null); setError(null); }} />
         <strong>{file?.name ?? "Choose spreadsheet"}</strong><span className="mt-1 text-xs" style={{ color: "var(--color-text-muted)" }}>Preview before saving</span>

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { getSchoolId, logout } from "@/lib/auth";
 import { RosterImportModal } from "@/components/principal/RosterImportModal";
 import { BOOKS } from "./registry";
-import { classLabel, flattenPages, type BookData, type BookPage, type Command, type PageView } from "./types";
+import { classLabel, findPagePath, flattenPages, type BookData, type BookPage, type Command, type PageView } from "./types";
 import styles from "./books.module.css";
 import { usePageTurn } from "./usePageTurn";
 
@@ -77,16 +77,31 @@ function CommandDialog({ command, onClose, onSaved }: { command: Command; onClos
 }
 
 /** The single page surface. Books provide data and actions, never their own layout. */
-function WorkspacePage({ view, title, query, onNavigate, onCommand, schoolId, data, onRefresh }: {
+function WorkspacePage({ view, title, query, onQuery, tab, onTab, onNavigate, onCommand, schoolId, data, onRefresh, stale, error, onRetry }: {
   view: PageView; title: string; query: string; onNavigate: (id: string) => void; onCommand: (command: Command) => void;
+  onQuery: (query: string) => void; tab: string; onTab: (tab?: string) => void;
   schoolId: number; data: BookData; onRefresh: () => Promise<void>;
+  stale: boolean; error: string | null; onRetry: () => void;
 }) {
   return <>
-    <div className={styles.pageTitle}><span className={styles.eyebrow}>{view.eyebrow ?? "Principal’s workspace"}</span><h1>{title}</h1>{view.description && <p>{view.description}</p>}{view.image && <Image unoptimized width={800} height={180} className={styles.classImage} src={view.image} alt={`${title} profile`} />}</div>
+    <header className={styles.pageHeading} data-page-heading>
+      <div className={styles.titleRow}><h1>{title}</h1><div className={styles.headingControls}>
+        <div className={styles.filterTools}>
+        {view.tabs && (view.filterDisplay === "dropdown" ? <label className={styles.filterDropdown}><span className="sr-only">Filter this page</span><select value={tab || view.tabs[0].id} onChange={event => onTab(event.target.value === view.tabs![0].id ? undefined : event.target.value)}>{view.tabs.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}</select><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></label>
+          : <div className={styles.tabs} role="group" aria-label="Page filters">{view.tabs.map((item, index) => <button type="button" key={item.id} aria-pressed={(tab || view.tabs![0].id) === item.id} onClick={() => onTab(index === 0 ? undefined : item.id)}>{item.label}</button>)}</div>)}
+        {(view.searchable ?? view.sections?.some(section => section.rows.length > 5)) && <label className={styles.search}><span className="sr-only">Search this page</span><input type="search" placeholder="Search this page…" value={query} onChange={event => onQuery(event.target.value)} /></label>}
+        </div>
+        {!!view.titleActions?.length && <div className={styles.contextActions}>{view.titleActions.map(action => <button type="button" className={styles.contextButton} key={action.label} onClick={() => onCommand(action)}>{action.label}</button>)}</div>}
+      </div></div>
+      {stale && !error && <span className="sr-only" role="status">Updating page content…</span>}
+      {error && <div className={styles.viewError} role="alert"><span>{error}</span><button type="button" className={styles.textButton} onClick={onRetry}>Try again</button></div>}
+    </header>
+    <div aria-busy={stale && !error} inert={stale}>
+    <div className={styles.pageTitle}><span className={styles.eyebrow}>{view.eyebrow ?? "Principal’s workspace"}</span>{view.description && <p>{view.description}</p>}{view.image && <Image unoptimized width={800} height={180} className={styles.classImage} src={view.image} alt={`${title} profile`} />}</div>
     {view.stats && <dl className={styles.stats}>{view.stats.map(stat => <div key={stat.label}><dd>{stat.value}</dd><dt>{stat.label}</dt></div>)}</dl>}
     {view.sections?.map(section => {
       const rows = section.rows.filter(row => `${row.title} ${row.detail ?? ""} ${row.badge ?? ""}`.toLowerCase().includes(query.toLowerCase()));
-      return <section key={section.title} className={styles.section} aria-label={section.title}><div className={styles.sectionHeading}><h2>{section.title}</h2><span>{rows.length}</span></div>
+      return <section key={section.title} className={styles.section} aria-label={section.title}><div className={styles.sectionHeading}><h2>{section.title}</h2><span>{rows.length}</span>{!!section.actions?.length && <div className={styles.contextActions}>{section.actions.map(action => <button type="button" className={styles.contextButton} key={action.label} onClick={() => onCommand(action)}>{action.label}</button>)}</div>}</div>
         {rows.length ? <ul className={styles.rows}>{rows.map(row => <li key={row.id}>
           {row.pageId ? <button className={styles.rowLink} onClick={() => onNavigate(row.pageId!)}><span><strong>{row.title}</strong><small>{row.detail}</small></span><Arrow /></button> : <div className={styles.rowText}><strong>{row.title}</strong>{row.detail && <small>{row.detail}</small>}</div>}
           {row.badge && <span className={styles.badge}>{row.badge}</span>}
@@ -97,7 +112,8 @@ function WorkspacePage({ view, title, query, onNavigate, onCommand, schoolId, da
     {view.content}
     {view.import && <RosterImportModal key={`${view.import.kind}-${view.import.classId ?? "all"}`} inline schoolId={schoolId} kind={view.import.kind} initialClassId={view.import.classId} fixedClass={!!view.import.classId}
       classOptions={(data.classes ?? []).map(cls => ({ value: String(cls.id), label: classLabel(cls) }))} onClose={() => onNavigate(view.import?.classId ? `class-${view.import.classId}` : view.import?.kind === "staff" ? "staff" : "learners")} onSaved={onRefresh} />}
-    {(!!view.actions?.length || !!view.links?.length) && <div className={styles.pageActions}>{view.actions?.map((action, index) => <button className={index === 0 ? styles.primary : undefined} key={action.label} onClick={() => onCommand(action)}>{action.label}</button>)}{view.links?.map(link => <button key={link.pageId} onClick={() => onNavigate(link.pageId)}>{link.label}<Arrow /></button>)}</div>}
+    {(!!view.actions?.length || !!view.links?.length) && <section id="workspace-page-actions" className={styles.pageActions} data-page-actions aria-label="Page actions" tabIndex={-1}><h2>Actions</h2>{view.links?.map(link => <button type="button" key={link.pageId} onClick={() => onNavigate(link.pageId)}>{link.label}<Arrow /></button>)}{view.actions?.map(action => <button type="button" key={action.label} onClick={() => onCommand(action)}>{action.label}</button>)}</section>}
+    </div>
   </>;
 }
 
@@ -109,7 +125,8 @@ export function BookWorkspace() {
   const tab = params.get("tab") ?? "";
   const book = BOOKS.find(item => item.id === bookId);
   const [loaded, setLoaded] = useState<{ bookId: string; data: BookData; revision: number } | null>(null);
-  const [viewState, setViewState] = useState<{ key: string; view: PageView } | null>(null);
+  const [viewState, setViewState] = useState<{ key: string; pageKey: string; view: PageView } | null>(null);
+  const [viewAttempt, setViewAttempt] = useState(0);
   const [loadError, setLoadError] = useState<{ bookId: string; message: string } | null>(null);
   const [viewError, setViewError] = useState<{ key: string; message: string } | null>(null);
   const [revision, setRevision] = useState(0);
@@ -121,9 +138,14 @@ export function BookWorkspace() {
   const pages = useMemo(() => book && data ? book.pages(data) : [], [book, data]);
   const flat = useMemo(() => flattenPages(pages), [pages]);
   const page = flat.find(item => item.id === pageId) ?? flat[0];
+  const breadcrumbPages = useMemo(() => page ? findPagePath(pages, page.id).slice(-2) : [], [pages, page]);
   const index = flat.findIndex(item => item.id === page?.id);
-  const viewKey = `${bookId}/${page?.id}/${tab}/${revision}`;
-  const view = viewState?.key === viewKey ? viewState.view : null;
+  const pageKey = `${bookId}/${page?.id}/${revision}`;
+  const viewKey = `${pageKey}/${tab}/${viewAttempt}`;
+  // A tab is another view of this page. Retain its mounted surface while loading,
+  // but never reuse content from another book, page or data revision.
+  const view = viewState?.pageKey === pageKey ? viewState.view : null;
+  const viewStale = viewState?.key !== viewKey;
   const error = loadError && book && loadError.bookId === book.id ? loadError.message : viewError?.key === viewKey ? viewError.message : null;
   const { source: sheet, layers: turnLayers, turn } = usePageTurn(view ? viewKey : `${bookId}/${pageId}/${tab}/loading`);
 
@@ -141,9 +163,9 @@ export function BookWorkspace() {
     const schoolId = getSchoolId();
     if (!schoolId) return;
     let cancelled = false;
-    book.view({ schoolId, data, page, tab }).then(view => { if (!cancelled) { setViewState({ key: viewKey, view }); setViewError(null); } }).catch(err => { if (!cancelled) setViewError({ key: viewKey, message: err instanceof Error ? err.message : "Could not load this page." }); });
+    book.view({ schoolId, data, page, tab }).then(view => { if (!cancelled) { setViewState({ key: viewKey, pageKey, view }); setViewError(null); } }).catch(err => { if (!cancelled) setViewError({ key: viewKey, message: err instanceof Error ? err.message : "Could not load this page." }); });
     return () => { cancelled = true; };
-  }, [book, data, page, tab, viewKey]);
+  }, [book, data, page, tab, pageKey, viewKey]);
 
   useEffect(() => {
     const updateAfterImport = () => { if (importChanged.current) { importChanged.current = false; setRevision(value => value + 1); } };
@@ -198,6 +220,16 @@ export function BookWorkspace() {
     setRevision(value => value + 1);
   }
 
+  function jumpToActions() {
+    const container = sheet.current;
+    const actions = container?.querySelector<HTMLElement>("[data-page-actions]");
+    if (!container || !actions || viewStale) return;
+    const headingHeight = container.querySelector<HTMLElement>("[data-page-heading]")?.offsetHeight ?? 0;
+    const top = actions.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - headingHeight - 16;
+    actions.focus({ preventScroll: true });
+    container.scrollTo({ top: Math.max(0, top), behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }
+
   return <div className={styles.workspace} style={book ? { "--book-accent": book.color } as React.CSSProperties : undefined}>
     <header className={styles.topbar}><Link href="/dashboard/principal" className={styles.brand}>NEDECEN<span>School workspace</span></Link><span className={styles.role}>Principal’s library</span><button onClick={() => { logout(); router.replace("/"); }}>Sign out <span aria-hidden="true">↗</span></button></header>
     <div className={styles.layout}>
@@ -209,18 +241,18 @@ export function BookWorkspace() {
       </details></aside>
       <main className={styles.binder} aria-label="Book workspace">
         <div className={styles.paper}>
-          <div className={styles.pageToolbar}><span>{book ? book.title : "Your school library"}</span>{book && <button onClick={() => router.push("/dashboard/principal", { scroll: false })} aria-label="Close book">Close book ×</button>}</div>
+          <div className={styles.pageToolbar}>
+            <nav className={styles.breadcrumb} aria-label="Current book and page"><span>{book ? book.title : "Your school library"}</span>{book && breadcrumbPages.map(crumb => <span className={styles.breadcrumbPart} key={crumb.id}><span className={styles.breadcrumbDivider} aria-hidden="true">/</span>{crumb.id === page?.id ? <span aria-current="page">{crumb.title}</span> : <button type="button" onClick={() => navigate(book.id, crumb.id)}>{crumb.title}</button>}</span>)}</nav>
+            {book && <div className={styles.toolbarActions}>{(!!view?.actions?.length || !!view?.links?.length) && <button type="button" onClick={jumpToActions} disabled={viewStale} aria-controls="workspace-page-actions">Actions <span aria-hidden="true">↓</span></button>}<button type="button" onClick={() => router.push("/dashboard/principal", { scroll: false })} aria-label="Close book">Close book ×</button></div>}
+          </div>
           <div className={styles.pageBody}>
           <div className={styles.spine} aria-hidden="true"><span /><span /></div>
           <div className={styles.pageViewport}>
-          <div className={styles.pageScroll} ref={sheet} aria-busy={!!book && !view && !error}>
+          <div className={styles.pageScroll} ref={sheet}>
             {!book ? <div className={styles.welcome}><span className={styles.eyebrow}>A little order. More possibility.</span><div className={styles.welcomeBook} aria-hidden="true">N<span>School library</span></div><h1>Your school.<br />One page at a time.</h1><p>Grades, people and everything in between.<br />Choose a book from your shelf to get started.</p><button className={styles.primary} onClick={() => navigate("grades")}>Open Grades &amp; Classes <Arrow /></button><span className={styles.welcomeFoot}>{BOOKS.length} books. One workspace.</span></div>
-              : error ? <div className={styles.empty}><h1>We couldn’t open this page</h1><p role="alert">{error}</p><button onClick={() => void refresh()}>Try again</button></div>
-                : view && page && data ? <>
-                  <div className={styles.tools}>{view.tabs && <div className={styles.tabs} aria-label="Page view">{view.tabs.map((item, index) => <button key={item.id} aria-pressed={(tab || view.tabs![0].id) === item.id} onClick={() => navigate(book.id, page.id, index === 0 ? undefined : item.id)}>{item.label}</button>)}</div>}
-                    {!!view.sections?.some(section => section.rows.length > 5) && <label className={styles.search}><span className="sr-only">Search this page</span><input placeholder="Search this page…" value={query} onChange={event => setQuery(event.target.value)} /></label>}</div>
-                  <WorkspacePage view={view} title={page.title} query={query} onNavigate={id => navigate(book.id, id)} onCommand={setCommand} schoolId={getSchoolId()!} data={data} onRefresh={async () => { importChanged.current = true; }} />
-                </> : <div className={styles.loading} role="status"><span className={styles.eyebrow}>{page?.title ?? "Opening book"}</span><h1>Preparing your page…</h1><div /><div /><div /></div>}
+              : error && !view ? <div className={styles.empty}><h1>We couldn’t open this page</h1><p role="alert">{error}</p><button onClick={() => void refresh()}>Try again</button></div>
+                : view && page && data ? <WorkspacePage view={view} title={page.title} query={query} onQuery={setQuery} tab={tab} onTab={nextTab => navigate(book.id, page.id, nextTab)} onNavigate={id => navigate(book.id, id)} onCommand={setCommand} schoolId={getSchoolId()!} data={data} onRefresh={async () => { importChanged.current = true; }} stale={viewStale} error={error} onRetry={() => setViewAttempt(value => value + 1)} />
+                : <div className={styles.loading} role="status"><span className={styles.eyebrow}>{page?.title ?? "Opening book"}</span><h1>Preparing your page…</h1><div /><div /><div /></div>}
           </div>
           <div ref={turnLayers} className={styles.turnLayers} aria-hidden="true" inert><div className={styles.turnUnderlay} />{Array.from({ length: 6 }, (_, index) => <div className={styles.turnSheet} key={index} />)}</div>
           </div>

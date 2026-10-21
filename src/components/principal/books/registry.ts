@@ -3,7 +3,7 @@ import { API_BASE } from "@/lib/api";
 import { createElement } from "react";
 import { ClassCurriculum } from "@/components/principal/ClassCurriculum";
 import type { BookData, BookDefinition, BookPage, Command, Field, PageRow, RecordItem } from "./types";
-import { classLabel, nameOf, optionsOf } from "./types";
+import { classLabel, learnerName, nameOf, optionsOf, streamLabel } from "./types";
 
 const get = (path: string) => api.get<RecordItem[]>(path);
 const base = (id: number) => `/schools/${id}`;
@@ -38,12 +38,11 @@ function classCommand(schoolId: number, data: BookData, grade: RecordItem, cls?:
 function personCommand(schoolId: number, kind: "staff" | "learners", classes: RecordItem[] = [], classId = ""): Command {
   return {
     label: kind === "staff" ? "Add staff member" : "Add learner",
-    fields: [text("title", "Title"), text("firstName", "First name"), text("surname", "Surname"), text("identifier", kind === "staff" ? "Staff number" : "Admission number"),
+    fields: [...(kind === "staff" ? [text("title", "Title")] : []), text("firstName", "First name"), text("surname", "Surname"), text("identifier", kind === "staff" ? "Staff number" : "Admission number"),
       ...(kind === "learners" ? [{ ...select("classId", "Class", classes.map(item => ({ ...item, name: classLabel(item) })), classId, true) }] : [])],
     run: async values => {
-      const { identifier, classId: selectedClass, ...person } = values;
-      await api.post(`${base(schoolId)}/${kind === "staff" ? "people" : "learners"}`, { ...person,
-        ...(kind === "staff" ? { staffNumber: identifier, role: "teacher" } : { admissionNumber: identifier, classId: Number(selectedClass) }) });
+      await api.post(`${base(schoolId)}/${kind === "staff" ? "people" : "learners"}`, { firstName: values.firstName, surname: values.surname,
+        ...(kind === "staff" ? { title: values.title, staffNumber: values.identifier, role: "teacher" } : { admissionNumber: values.identifier, classId: Number(values.classId) }) });
     },
   };
 }
@@ -66,7 +65,7 @@ export const BOOKS: BookDefinition[] = [
         const classes = data.classes.filter(cls => cls.gradeId === entity.id);
         return { eyebrow: "School structure", description: `A place for every class in Grade ${entity.number}. Open a class to manage its learners and teaching setup.`,
           stats: [{ label: "Classes", value: classes.length }, { label: "Learners", value: classes.reduce((sum, cls) => sum + Number(cls.learnerCount ?? 0), 0) }],
-          sections: [{ title: "Classes in this grade", rows: pageRows(page.children ?? []), empty: "No classes yet. Create the first class below." }], actions: [classCommand(schoolId, data, entity)] };
+          sections: [{ title: "Classes in this grade", rows: pageRows(page.children ?? []), empty: "No classes yet. Create the first class here.", actions: [classCommand(schoolId, data, entity)] }] };
       }
       const grade = data.grades.find(grade => grade.id === entity.gradeId)!;
       const manager = data.people.find(person => person.id === entity.classTeacherId);
@@ -75,23 +74,25 @@ export const BOOKS: BookDefinition[] = [
       const items = await get(`${path}/${subjectsSelected ? "subjects" : "learners"}`);
       const stream = data.streams.find(stream => stream.id === entity.streamId);
       const assignStream: Command = {
-        label: "Assign stream", fields: [{ ...select("streamId", "Stream", data.streams, String(entity.streamId ?? ""), true), preview: async value => (await get(`${base(schoolId)}/streams/${value}/subjects`)).map(item => String(item.subjectName)) }],
+        label: "Assign stream", fields: [{ ...select("streamId", "Stream", data.streams.map(stream => ({ ...stream, name: streamLabel(String(stream.name)) })), String(entity.streamId ?? ""), true), preview: async value => (await get(`${base(schoolId)}/streams/${value}/subjects`)).map(item => String(item.subjectName)) }],
         run: async values => { await api.post(`${base(schoolId)}/grades/${grade.id}/classes/${entity.id}/stream`, { streamId: Number(values.streamId) }); },
       };
-      return { eyebrow: stream ? String(stream.name) : "No stream assigned", description: manager ? `Class manager: ${nameOf(manager)}` : "No class manager assigned. Use Edit class to choose one.",
+      return { eyebrow: stream ? streamLabel(String(stream.name)) : "No stream assigned", description: manager ? `Class manager: ${nameOf(manager)}` : "No class manager assigned. Use Edit class to choose one.",
+        titleActions: [classCommand(schoolId, data, grade, entity)],
         image: entity.profileImageUrl ? new URL(String(entity.profileImageUrl), API_BASE).href : undefined,
         tabs: [{ id: "learners", label: "Learners" }, { id: "subjects", label: "Subjects" }],
         links: subjectsSelected ? [] : [{ label: `Import learners to ${classLabel(entity)}`, pageId: `import-${entity.id}` }],
         sections: [{ title: subjectsSelected ? "Subjects & teachers" : "Class register", empty: subjectsSelected ? "Assign a stream to bring subjects into this class." : "Your class register is empty. Add a learner or open Import learners.",
-          rows: items.map(item => ({ id: String(item.id), title: subjectsSelected ? String(item.subjectName) : nameOf(item),
+          actions: subjectsSelected ? [assignStream] : [personCommand(schoolId, "learners", data.classes, String(entity.id))],
+          rows: items.map(item => ({ id: String(item.id), title: subjectsSelected ? String(item.subjectName) : learnerName(item),
             detail: subjectsSelected ? nameOf(data.people.find(person => person.id === item.personId) ?? { id: 0 }) || "No teacher assigned" : String(item.admissionNumber),
             badge: subjectsSelected ? undefined : item.accountSetUp ? "Account active" : "Setup pending",
             actions: subjectsSelected ? [{ label: "Assign teacher", fields: [select("personId", "Teacher", data.people, String(item.personId ?? ""))], run: async values => { await api.patch(`${path}/subjects/${item.id}/teacher`, { personId: Number(values.personId) || null }); } },
               { label: "Curriculum", content: createElement(ClassCurriculum, { schoolId, classId: entity.id, classSubjectId: item.id, subjectName: String(item.subjectName) }) }] : [],
           })) }],
-        actions: [classCommand(schoolId, data, grade, entity), ...(subjectsSelected ? [assignStream] : [personCommand(schoolId, "learners", data.classes, String(entity.id))]),
+        actions: [
           { label: "Update class photo", fields: [{ name: "image", label: "Class photo (up to 5 MB)", type: "file", required: true }], run: async (_values, formData) => { const image = formData.get("image"); if (!(image instanceof File) || !image.size) throw new Error("Choose an image."); if (image.size > 5 * 1024 * 1024) throw new Error("Choose an image smaller than 5 MB."); const upload = new FormData(); upload.append("file", image); await api.upload(`${base(schoolId)}/grades/${grade.id}/classes/${entity.id}/profile-image`, upload); } },
-          remove(classLabel(entity), `${base(schoolId)}/grades/${grade.id}/classes/${entity.id}`, "This deletes the class and its learners, lessons, homework, feedback and teaching setup.")],
+          { ...remove(classLabel(entity), `${base(schoolId)}/grades/${grade.id}/classes/${entity.id}`, "This deletes the class and its learners, lessons, homework, feedback and teaching setup."), label: "Delete class" }],
       };
     },
   },
@@ -99,7 +100,7 @@ export const BOOKS: BookDefinition[] = [
     id: "streams", title: "Streams", subtitle: "Subjects that belong together", mark: "02", color: "#536b58",
     description: "Create subject bundles for your school, then assign them to classes. Changes to a stream do not rewrite existing class teaching records.",
     load: async schoolId => { const [streams, subjects] = await Promise.all([get(`${base(schoolId)}/streams`), get("/subjects")]); return { streams, subjects }; },
-    pages: data => [{ id: "my-streams", title: "My Streams", number: "1", kind: "streams", children: data.streams.map((stream, index) => ({ id: `stream-${stream.id}`, title: String(stream.name), number: `1.${index + 1}`, kind: "stream", entity: stream })) }, { id: "system-streams", title: "System Streams", number: "2", kind: "system-streams" }],
+    pages: data => [{ id: "my-streams", title: "My Streams", number: "1", kind: "streams", children: data.streams.map((stream, index) => ({ id: `stream-${stream.id}`, title: streamLabel(String(stream.name)), number: `1.${index + 1}`, kind: "stream", entity: stream })) }, { id: "system-streams", title: "System Streams", number: "2", kind: "system-streams" }],
     view: async ({ schoolId, data, page }) => {
       const stream = page.entity;
       const path = `${base(schoolId)}/streams`;
@@ -113,12 +114,13 @@ export const BOOKS: BookDefinition[] = [
         return `stream-${createdStream.id}`;
       } };
       if (page.kind === "system-streams") return { description: "System stream templates will appear here when they are available from the platform.", sections: [{ title: "System streams", rows: [], empty: "No system stream catalogue is available yet. You can create a school stream from the subject catalogue in My Streams." }] };
-      if (!stream) return { description: "Group subjects into streams that make sense for your school.", stats: [{ label: "School streams", value: data.streams.length }, { label: "Available subjects", value: data.subjects.length }], sections: [{ title: "Your streams", rows: pageRows(page.children ?? []), empty: "Create your first stream to start grouping subjects." }], actions: [create] };
+      if (!stream) return { description: "Group subjects into streams that make sense for your school.", stats: [{ label: "School streams", value: data.streams.length }, { label: "Available subjects", value: data.subjects.length }], sections: [{ title: "Your streams", rows: pageRows(page.children ?? []), empty: "Create your first stream to start grouping subjects.", actions: [create] }] };
       const subjects = await get(`${path}/${stream.id}/subjects`);
       return { description: "Manage the subjects in this stream. Existing class teaching records are preserved when you change this list.",
-        sections: [{ title: "Subjects", rows: subjects.map(item => ({ id: String(item.id), title: String(item.subjectName), actions: [remove(String(item.subjectName), `${path}/${stream.id}/subjects/${item.id}`, "Remove this subject from the stream?")] })), empty: "Add subjects from the platform catalogue." }],
-        actions: [{ label: "Add subject", fields: [select("subjectId", "Subject", data.subjects.filter(subject => !subjects.some(item => item.subjectId === subject.id)), "", true)], run: async values => { await api.post(`${path}/${stream.id}/subjects`, { subjectId: Number(values.subjectId) }); } },
-          { label: "Rename stream", fields: [text("name", "Stream name", String(stream.name))], run: async values => { await api.patch(`${path}/${stream.id}`, values); } }, remove(String(stream.name), `${path}/${stream.id}`)],
+        sections: [{ title: "Subjects", rows: subjects.map(item => ({ id: String(item.id), title: String(item.subjectName), actions: [remove(String(item.subjectName), `${path}/${stream.id}/subjects/${item.id}`, "Remove this subject from the stream?")] })), empty: "Add subjects from the platform catalogue.",
+          actions: [{ label: "Add subject", fields: [select("subjectId", "Subject", data.subjects.filter(subject => !subjects.some(item => item.subjectId === subject.id)), "", true)], run: async values => { await api.post(`${path}/${stream.id}/subjects`, { subjectId: Number(values.subjectId) }); } }] }],
+        titleActions: [{ label: "Rename stream", fields: [text("name", "Stream name", String(stream.name))], run: async values => { await api.patch(`${path}/${stream.id}`, values); } }],
+        actions: [remove(streamLabel(String(stream.name)), `${path}/${stream.id}`)],
       };
     },
   },
@@ -132,7 +134,8 @@ export const BOOKS: BookDefinition[] = [
       const people = data.people.filter(person => tab === "assigned" ? Number(person.assignedChapterCount) > 0 : tab === "unassigned" ? !Number(person.assignedChapterCount) : tab === "pending" ? !person.accountSetUp : tab === "active" ? !!person.accountSetUp : true);
       return { description: "Your staff register and account setup at a glance.", stats: [{ label: "Staff members", value: data.people.length }, { label: "Accounts active", value: data.people.filter(person => person.accountSetUp).length }],
         tabs: [{ id: "all", label: "All staff" }, { id: "assigned", label: "Teaching assigned" }, { id: "unassigned", label: "Not assigned" }, { id: "active", label: "Account active" }, { id: "pending", label: "Setup pending" }],
-        sections: [{ title: "Staff register", rows: people.map(person => ({ id: String(person.id), title: nameOf(person), detail: `${person.staffNumber} · ${Number(person.assignedChapterCount ?? 0)} assigned chapters`, badge: person.accountSetUp ? "Account active" : "Setup pending" })), empty: "No staff members match this view." }], actions: [personCommand(schoolId, "staff")], links: [{ label: "Import staff", pageId: "import-staff" }] };
+        filterDisplay: "dropdown", searchable: true,
+        sections: [{ title: "Staff register", rows: people.map(person => ({ id: String(person.id), title: nameOf(person), detail: `${person.staffNumber} · ${Number(person.assignedChapterCount ?? 0)} assigned chapters`, badge: person.accountSetUp ? "Account active" : "Setup pending" })), empty: "No staff members match this view.", actions: [personCommand(schoolId, "staff")] }], links: [{ label: "Import staff", pageId: "import-staff" }] };
     },
   },
   {
@@ -147,7 +150,7 @@ export const BOOKS: BookDefinition[] = [
       return { description: page.entity ? `The learner register for ${classLabel(page.entity)}.` : "Browse every learner in your school, or choose a class from the contents.",
         stats: [{ label: "Learners", value: learners.length }, { label: "Accounts active", value: learners.filter(person => person.accountSetUp).length }],
         tabs: [{ id: "all", label: "All learners" }, { id: "pending", label: "Setup pending" }],
-        sections: [{ title: "Learner register", rows: learners.filter(person => tab !== "pending" || !person.accountSetUp).map(person => ({ id: String(person.id), title: nameOf(person), detail: `${person.className} · ${person.admissionNumber}`, badge: person.accountSetUp ? "Account active" : "Setup pending" })), empty: "No learners match this view. Add a learner or open Import learners." }], actions: [personCommand(schoolId, "learners", data.classes, String(page.entity?.id ?? ""))], links: [{ label: "Import learners", pageId: "import-learners" }] };
+        sections: [{ title: "Learner register", rows: learners.filter(person => tab !== "pending" || !person.accountSetUp).map(person => ({ id: String(person.id), title: learnerName(person), detail: `${person.className} · ${person.admissionNumber}`, badge: person.accountSetUp ? "Account active" : "Setup pending" })), empty: "No learners match this view. Add a learner or open Import learners.", actions: [personCommand(schoolId, "learners", data.classes, String(page.entity?.id ?? ""))] }], links: [{ label: "Import learners", pageId: "import-learners" }] };
     },
   },
   {
@@ -161,7 +164,7 @@ export const BOOKS: BookDefinition[] = [
       const edit: Command = { label: item ? "Edit announcement" : "Create announcement", fields: [text("title", "Title", String(item?.title ?? "")), { ...text("body", "Message", String(item?.body ?? "")), type: "textarea" },
         { name: "audienceType", label: "Audience", type: "select", value: String(item?.audienceType ?? "all"), required: true, options: ["all", "grade", "class", "stream"].map(value => ({ value, label: value === "all" ? "Everyone" : value })) },
         { name: "audienceId", label: "Grade, class or stream (leave blank for everyone)", type: "select", value: item ? `${item.audienceType}:${item.audienceId}` : "", options: [
-          ...data.grades.map(grade => ({ value: `grade:${grade.id}`, label: `Grade ${grade.number}` })), ...data.classes.map(cls => ({ value: `class:${cls.id}`, label: classLabel(cls) })), ...data.streams.map(stream => ({ value: `stream:${stream.id}`, label: String(stream.name) })),
+          ...data.grades.map(grade => ({ value: `grade:${grade.id}`, label: `Grade ${grade.number}` })), ...data.classes.map(cls => ({ value: `class:${cls.id}`, label: classLabel(cls) })), ...data.streams.map(stream => ({ value: `stream:${stream.id}`, label: streamLabel(String(stream.name)) })),
         ] }], run: async values => {
           const [audienceType, audienceId] = values.audienceId.split(":");
           if (values.audienceType !== "all" && (audienceType !== values.audienceType || !audienceId)) throw new Error("Choose a matching audience for this announcement.");
@@ -169,7 +172,7 @@ export const BOOKS: BookDefinition[] = [
           const saved = item ? await api.patch<RecordItem>(`${path}/${item.id}`, payload) : await api.post<RecordItem>(path, payload);
           return `announcement-${saved.id}`;
         } };
-      return item ? { eyebrow: `Audience: ${item.audienceType}`, description: String(item.body), actions: [edit, remove(String(item.title), `${path}/${item.id}`)] } : { description: "Messages for your school community.", sections: [{ title: "Announcements", rows: pageRows(page.children ?? []), empty: "No announcements yet. Write the first message for your school." }], actions: [edit] };
+      return item ? { eyebrow: `Audience: ${item.audienceType}`, description: String(item.body), titleActions: [edit], actions: [remove(String(item.title), `${path}/${item.id}`)] } : { description: "Messages for your school community.", sections: [{ title: "Announcements", rows: pageRows(page.children ?? []), empty: "No announcements yet. Write the first message for your school.", actions: [edit] }] };
     },
   },
   {

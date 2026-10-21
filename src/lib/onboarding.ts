@@ -1,7 +1,7 @@
 import { api } from "./api";
 
 export interface PersonName {
-  title: string;
+  title?: string;
   firstName: string;
   surname: string;
 }

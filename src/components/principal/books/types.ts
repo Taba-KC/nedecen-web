@@ -40,10 +40,13 @@ export interface PageView {
   eyebrow?: string;
   description?: string;
   stats?: { label: string; value: string | number }[];
-  sections?: { title: string; rows: PageRow[]; empty?: string }[];
+  sections?: { title: string; rows: PageRow[]; empty?: string; actions?: Command[] }[];
+  titleActions?: Command[];
   actions?: Command[];
   links?: { label: string; pageId: string }[];
   tabs?: { id: string; label: string }[];
+  filterDisplay?: "buttons" | "dropdown";
+  searchable?: boolean;
   content?: ReactNode;
   image?: string;
   import?: { kind: "staff" | "learners"; classId?: string };
@@ -69,6 +72,20 @@ export interface BookDefinition {
 export function flattenPages(pages: BookPage[]): BookPage[] {
   return pages.flatMap(page => [page, ...flattenPages(page.children ?? [])]);
 }
+export function findPagePath(pages: BookPage[], pageId: string): BookPage[] {
+  for (const page of pages) {
+    if (page.id === pageId) return [page];
+    const children = findPagePath(page.children ?? [], pageId);
+    if (children.length) return [page, ...children];
+  }
+  return [];
+}
 export const nameOf = (item: RecordItem) => [item.title, item.firstName, item.surname].filter(Boolean).join(" ");
+export const learnerName = (item: RecordItem) => [item.firstName, item.surname].filter(Boolean).join(" ");
 export const classLabel = (item: RecordItem) => /^grade\s/i.test(String(item.name)) ? String(item.name) : `Grade ${item.name}`;
+/** Display formatting only; preserve the principal's stored stream name. */
+export function streamLabel(name: string): string {
+  const label = name.trim().replace(/\s+/g, " ").toUpperCase();
+  return /\bSTREAM\b/.test(label) ? label : `${label ? `${label} ` : ""}STREAM`;
+}
 export const optionsOf = (items: RecordItem[], label = "name") => items.map(item => ({ value: String(item.id), label: String(item[label] ?? nameOf(item)) }));

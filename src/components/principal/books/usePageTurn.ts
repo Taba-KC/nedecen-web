@@ -1,17 +1,20 @@
 "use client";
 
 import { useCallback, useLayoutEffect, useRef } from "react";
+import { pageTurnFrames, pageTurnSchedule } from "./pageTurnMotion";
 
 /** A temporary, inert picture of the visible DOM, not another mounted page. */
 function snapshot(source: HTMLElement) {
   const copy = source.cloneNode(true) as HTMLElement;
+  // The animation lives inside the paper, but must never copy itself or pins.
+  copy.querySelectorAll("[data-page-turn-layers], [data-page-spine]").forEach(element => element.remove());
   copy.inert = true;
   copy.setAttribute("aria-hidden", "true");
   copy.removeAttribute("id");
   copy.querySelectorAll("[id]").forEach(element => element.removeAttribute("id"));
   Object.assign(copy.style, {
     position: "absolute", inset: "0", width: "100%", height: "100%",
-    maxHeight: "none", overflow: "hidden", pointerEvents: "none",
+    maxHeight: "none", overflow: "hidden", pointerEvents: "none", border: "0", boxShadow: "none",
   });
   // Preserve the visible position and any unsaved values in an import preview.
   const originals = source.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("input, textarea, select");
@@ -20,20 +23,24 @@ function snapshot(source: HTMLElement) {
     field.value = originals[index].value;
     if (field instanceof HTMLInputElement && originals[index] instanceof HTMLInputElement) field.checked = (originals[index] as HTMLInputElement).checked;
   });
-  return { copy, scrollTop: source.scrollTop, scrollLeft: source.scrollLeft };
+  const originalScrollers = source.querySelectorAll<HTMLElement>("[data-page-scroll]");
+  const scrolls = Array.from(copy.querySelectorAll<HTMLElement>("[data-page-scroll]")).map((element, index) => ({ element, top: originalScrollers[index].scrollTop, left: originalScrollers[index].scrollLeft }));
+  return { copy, scrolls };
 }
 
 function placeSnapshot(target: HTMLElement, source: HTMLElement, incoming = false) {
-  const { copy, scrollTop, scrollLeft } = snapshot(source);
+  const { copy, scrolls } = snapshot(source);
   target.replaceChildren(copy);
-  copy.scrollTop = incoming ? 0 : scrollTop;
-  copy.scrollLeft = incoming ? 0 : scrollLeft;
+  for (const scroll of scrolls) {
+    scroll.element.scrollTop = incoming ? 0 : scroll.top;
+    scroll.element.scrollLeft = incoming ? 0 : scroll.left;
+  }
 }
 
 export function usePageTurn(contentKey: string) {
   const source = useRef<HTMLDivElement>(null);
   const layers = useRef<HTMLDivElement>(null);
-  const active = useRef<{ animations: Animation[]; incoming: HTMLElement | null; sourceKey: string } | null>(null);
+  const active = useRef<{ animations: Animation[]; incoming: HTMLElement; reverse: HTMLElement | null; sourceKey: string } | null>(null);
   const latestKey = useRef(contentKey);
 
   const clear = useCallback(() => {
@@ -53,6 +60,7 @@ export function usePageTurn(contentKey: string) {
     // Its motion has already started and is never delayed or restarted by data.
     if (current?.incoming && current.sourceKey !== contentKey && source.current) {
       placeSnapshot(current.incoming, source.current, true);
+      if (current.reverse) placeSnapshot(current.reverse, source.current, true);
     }
   }, [contentKey, source]);
 
@@ -69,34 +77,34 @@ export function usePageTurn(contentKey: string) {
     const [underlay, ...sheets] = Array.from(layers.current.children) as HTMLElement[];
     if (!underlay || !sheets.length) return;
     const backward = distance < 0;
-    const count = Math.abs(distance) > 4 ? 6 : Math.abs(distance);
-    const current = { animations: [] as Animation[], incoming: backward ? sheets[count - 1] : null, sourceKey: latestKey.current };
+    const schedule = pageTurnSchedule(distance);
+    const frames = pageTurnFrames(backward);
+    const current = { animations: [] as Animation[], incoming: underlay, reverse: null as HTMLElement | null, sourceKey: latestKey.current };
     active.current = current;
     layers.current.dataset.turning = backward ? "backward" : "forward";
     if (backward) placeSnapshot(underlay, source.current);
-    else placeSnapshot(sheets[0], source.current);
 
-    for (let index = 0; index < count; index++) {
+    for (let index = 0; index < schedule.length; index++) {
       const sheet = sheets[index];
-      const delay = index * 12;
-      sheet.style.zIndex = String(backward ? index + 1 : count - index);
-      const flat = "translate3d(0, 0, 0) rotateY(0deg)";
-      const lifted = "translate3d(0, -3px, 26px) rotateY(-28deg)";
-      const edge = "translate3d(-2px, 0, 4px) rotateY(-89deg)";
-      const keyframes: Keyframe[] = backward ? [
-        { transform: edge, opacity: 0, offset: 0 },
-        { transform: "translate3d(0, -5px, 32px) rotateY(-68deg)", opacity: 1, offset: .16 },
-        { transform: lifted, opacity: 1, offset: .58 },
-        { transform: flat, opacity: 1, offset: 1 },
-      ] : [
-        { transform: flat, opacity: 1, offset: 0 },
-        { transform: lifted, opacity: 1, offset: .32 },
-        { transform: "translate3d(-1px, -3px, 18px) rotateY(-76deg)", opacity: 1, offset: .82 },
-        { transform: edge, opacity: 0, offset: 1 },
-      ];
-      current.animations.push(sheet.animate(keyframes, {
-        duration: 200 - delay, delay, fill: "both", easing: "cubic-bezier(.22,.61,.36,1)",
+      sheet.style.zIndex = String(backward ? index + 1 : schedule.length - index);
+      const parts = Object.fromEntries(["front", "back", "curl", "shadow"].map(name => {
+        const element = document.createElement("div");
+        element.setAttribute(`data-turn-${name}`, "");
+        sheet.append(element);
+        return [name, element];
       }));
+      if (!backward && index === 0) {
+        placeSnapshot(parts.front, source.current);
+        placeSnapshot(parts.back, source.current);
+      } else if (backward && index === schedule.length - 1) {
+        current.incoming = parts.front;
+        current.reverse = parts.back;
+      }
+      const options = { ...schedule[index], fill: "both" as FillMode, easing: "linear" };
+      current.animations.push(sheet.animate([{ opacity: 1 }, { opacity: 1 }], options));
+      for (const name of ["front", "back", "curl", "shadow"] as const) {
+        current.animations.push(parts[name].animate(frames[name], options));
+      }
     }
     Promise.all(current.animations.map(animation => animation.finished)).then(() => {
       if (active.current === current) clear();

@@ -13,7 +13,7 @@ export interface BookPage {
 export interface Field {
   name: string;
   label: string;
-  type?: "text" | "textarea" | "select" | "number" | "file" | "subjects";
+  type?: "text" | "textarea" | "select" | "number" | "subjects";
   maxLength?: number;
   preview?: (value: string) => Promise<string[]>;
   required?: boolean;
@@ -22,7 +22,10 @@ export interface Field {
 }
 export interface Command {
   label: string;
+  variant?: "filled" | "outline";
+  pageId?: string;
   title?: string;
+  alternative?: { label: string; pageId: string };
   fields?: Field[];
   confirm?: string;
   content?: ReactNode;
@@ -38,17 +41,14 @@ export interface PageRow {
 }
 export interface PageView {
   eyebrow?: string;
-  description?: string;
-  stats?: { label: string; value: string | number }[];
+  description?: ReactNode;
+  guidance?: { text: string; action?: Command; after?: string };
   sections?: { title: string; rows: PageRow[]; empty?: string; actions?: Command[] }[];
   titleActions?: Command[];
-  actions?: Command[];
-  links?: { label: string; pageId: string }[];
   tabs?: { id: string; label: string }[];
   filterDisplay?: "buttons" | "dropdown";
   searchable?: boolean;
   content?: ReactNode;
-  image?: string;
   import?: { kind: "staff" | "learners"; classId?: string };
 }
 export interface BookContext {

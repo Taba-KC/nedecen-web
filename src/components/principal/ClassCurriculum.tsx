@@ -5,7 +5,9 @@ import { api } from "@/lib/api";
 
 interface Curriculum {
   gradeNumber: number;
-  chapters: { id: number; name: string; topics: { id: number; name: string; concepts: { id: number; name: string }[] }[] }[];
+  className: string;
+  coverage: { totalConcepts: number; taughtConcepts: number; percentage: number };
+  chapters: { id: number; name: string; topics: { id: number; name: string; concepts: { id: number; name: string; isTaught: boolean }[] }[] }[];
 }
 
 export function ClassCurriculum({ schoolId, classId, classSubjectId, subjectName, onBack }: {
@@ -27,7 +29,15 @@ export function ClassCurriculum({ schoolId, classId, classSubjectId, subjectName
     <section aria-label={subjectName + " curriculum"} style={{ color: "var(--color-text)" }}>
       {onBack && <button type="button" onClick={onBack} className="mb-4 text-sm hover:underline" style={{ color: "var(--color-text-muted)" }}>← Back to subjects</button>}
       <h3 className="text-base font-semibold">{subjectName}</h3>
-      {curriculum && <p className="mt-1 mb-4 text-xs" style={{ color: "var(--color-text-muted)" }}>Grade {curriculum.gradeNumber} · Curriculum · Read only</p>}
+      {curriculum && <>
+        <p className="mt-1 text-xs" style={{ color: "var(--color-text-muted)" }}>{curriculum.className} · Grade {curriculum.gradeNumber} · Read only</p>
+        <dl aria-label="Class curriculum coverage" className="my-4 grid grid-cols-3 gap-3 border-y py-3" style={{ borderColor: "var(--color-border)" }}>
+          <div><dt className="text-xs" style={{ color: "var(--color-text-muted)" }}>Total concepts</dt><dd className="mt-1 text-xl font-semibold">{curriculum.coverage.totalConcepts}</dd></div>
+          <div><dt className="text-xs" style={{ color: "var(--color-text-muted)" }}>Confirmed taught</dt><dd className="mt-1 text-xl font-semibold" style={{ color: "#166534" }}>{curriculum.coverage.taughtConcepts}</dd></div>
+          <div><dt className="text-xs" style={{ color: "var(--color-text-muted)" }}>Coverage</dt><dd className="mt-1 text-xl font-semibold">{curriculum.coverage.percentage}%</dd></div>
+        </dl>
+        <p className="mb-4 text-xs" style={{ color: "var(--color-text-muted)" }}>Green concepts are confirmed as taught in this class.</p>
+      </>}
       {error ? <div role="alert" className="mt-4 text-sm">
         <p>{error}</p>
         <button type="button" onClick={() => { setError(null); setAttempt(value => value + 1); }} className="mt-3 rounded-lg border px-3 py-2" style={{ borderColor: "var(--color-border)" }}>Try again</button>
@@ -41,7 +51,7 @@ export function ClassCurriculum({ schoolId, classId, classSubjectId, subjectName
               {chapter.topics.map(topic => <details key={topic.id} className="rounded-md border p-3" style={{ borderColor: "var(--color-border)" }}>
                 <summary className="cursor-pointer text-sm font-medium">{topic.name}</summary>
                 {topic.concepts.length ? <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm" style={{ color: "var(--color-school-charcoal)" }}>
-                  {topic.concepts.map(concept => <li key={concept.id}>{concept.name}</li>)}
+                  {topic.concepts.map(concept => <li key={concept.id} style={{ color: concept.isTaught ? "#166534" : "#171717" }}>{concept.name}{concept.isTaught && <span className="sr-only"> — confirmed taught</span>}</li>)}
                 </ol> : <p className="mt-3 text-xs" style={{ color: "var(--color-text-muted)" }}>No concepts yet.</p>}
               </details>)}
             </div>

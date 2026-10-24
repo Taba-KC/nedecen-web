@@ -14,6 +14,20 @@ const pageRows = (pages: BookPage[]): PageRow[] => pages.map(page => ({ id: page
 const figure = (value: number) => createElement("strong", null, value);
 const sentence = (...parts: (string | ReturnType<typeof figure>)[]) => createElement("span", null, ...parts);
 
+/** Unfinished books open a single informational page without loading feature data. */
+function underDevelopmentBook(details: Pick<BookDefinition, "id" | "title" | "subtitle" | "mark" | "color" | "description">): BookDefinition {
+  return {
+    ...details,
+    load: async () => ({}),
+    pages: () => [{ id: "under-development", title: "Still under development", number: "1", kind: "under-development" }],
+    view: async () => ({
+      eyebrow: details.title,
+      description: details.description,
+      content: createElement("p", null, "This feature is still under development. Its tools will be available here when it is ready."),
+    }),
+  };
+}
+
 async function structure(schoolId: number): Promise<BookData> {
   const grades = (await get(`${base(schoolId)}/grades`)).sort((a, b) => Number(a.number) - Number(b.number));
   const classes = (await Promise.all(grades.map(grade => get(`${base(schoolId)}/grades/${grade.id}/classes`)))).flat();
@@ -155,28 +169,10 @@ export const BOOKS: BookDefinition[] = [
         sections: [{ title: "Learner register", rows: learners.filter(person => tab !== "pending" || !person.accountSetUp).map(person => ({ id: String(person.id), title: learnerName(person), detail: `${person.className} · ${person.admissionNumber}`, badge: person.accountSetUp ? "Account active" : "Setup pending" })), empty: "No learners match this view. Add a learner or open Bulk import learners.", actions: [{ ...personCommand(schoolId, "learners", data.classes, String(page.entity?.id ?? "")), alternative: { label: "Bulk import learners", pageId: "import-learners" } }] }] };
     },
   },
-  {
+  underDevelopmentBook({
     id: "announcements", title: "Announcements", subtitle: "Keep your school in the loop", mark: "05", color: "#786081",
-    description: "Publish school messages to everyone, a grade, a class or a stream, and manage existing announcements.",
-    load: async schoolId => { const [data, announcements, streams] = await Promise.all([structure(schoolId), get(`${base(schoolId)}/announcements`), get(`${base(schoolId)}/streams`)]); return { ...data, announcements, streams }; },
-    pages: data => [{ id: "announcements", title: "Noticeboard", number: "1", kind: "announcements", children: data.announcements.map((item, index) => ({ id: `announcement-${item.id}`, title: String(item.title), number: `1.${index + 1}`, kind: "announcement", entity: item })) }],
-    view: async ({ schoolId, data, page }) => {
-      const item = page.entity;
-      const path = `${base(schoolId)}/announcements`;
-      const edit: Command = { label: item ? "Edit announcement" : "Create announcement", fields: [text("title", "Title", String(item?.title ?? "")), { ...text("body", "Message", String(item?.body ?? "")), type: "textarea" },
-        { name: "audienceType", label: "Audience", type: "select", value: String(item?.audienceType ?? "all"), required: true, options: ["all", "grade", "class", "stream"].map(value => ({ value, label: value === "all" ? "Everyone" : value })) },
-        { name: "audienceId", label: "Grade, class or stream (leave blank for everyone)", type: "select", value: item ? `${item.audienceType}:${item.audienceId}` : "", options: [
-          ...data.grades.map(grade => ({ value: `grade:${grade.id}`, label: `Grade ${grade.number}` })), ...data.classes.map(cls => ({ value: `class:${cls.id}`, label: classLabel(cls) })), ...data.streams.map(stream => ({ value: `stream:${stream.id}`, label: streamLabel(String(stream.name)) })),
-        ] }], run: async values => {
-          const [audienceType, audienceId] = values.audienceId.split(":");
-          if (values.audienceType !== "all" && (audienceType !== values.audienceType || !audienceId)) throw new Error("Choose a matching audience for this announcement.");
-          const payload = { ...values, audienceId: values.audienceType === "all" ? null : Number(audienceId) };
-          const saved = item ? await api.patch<RecordItem>(`${path}/${item.id}`, payload) : await api.post<RecordItem>(path, payload);
-          return `announcement-${saved.id}`;
-        } };
-      return item ? { eyebrow: `Audience: ${item.audienceType}`, description: String(item.body), titleActions: [{ ...edit, variant: "filled" }, { ...remove(String(item.title), `${path}/${item.id}`), label: "Delete announcement", variant: "outline" }] } : { description: "Messages for your school community.", sections: [{ title: "Announcements", rows: pageRows(page.children ?? []), empty: "No announcements yet. Write the first message for your school.", actions: [edit] }] };
-    },
-  },
+    description: "Announcements will be a place to share school news, reminders and important updates. You will be able to publish messages for everyone, a grade, a class or a stream, and edit or remove announcements as needed.",
+  }),
   {
     id: "curriculum", title: "Curriculum", subtitle: "See the learning journey", mark: "06", color: "#4d7778",
     description: "Explore the curriculum by grade and subject, then view chapters and concepts in each subject.",

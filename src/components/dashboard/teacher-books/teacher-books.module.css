@@ -1,0 +1,51 @@
+.note { font-size: 12px; line-height: 1.8; color: var(--muted); }
+.pageContent { display: flow-root; padding-top: 24px; }
+.pageContent > section:first-child { margin-top: 0; }
+.pageContent > section:first-child > .sectionHeading { border-top: 0; padding-top: 0; }
+.sectionHeading { border-block: 1px solid var(--line); padding-block: 14px; margin-bottom: 8px; min-height: 49px; }
+.sectionHeading h2 { font-size: 13px; font-weight: 600; }
+.sectionAction { margin-left: auto; }
+.spacedRows.spacedRows > li { border: 0; padding: 16px 0; flex-wrap: nowrap; }
+.rowBody { flex: 1; min-width: 0; }
+.singleLine { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rowDetail { display: block; font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.6; }
+.detailText { white-space: pre-wrap; overflow-wrap: anywhere; }
+.conceptOption.conceptOption { display: flex; flex-direction: row; align-items: center; gap: 12px; margin: 0; padding: 0; min-width: 0; }
+.conceptOption.conceptOption input { flex: 0 0 16px; width: 16px; height: 16px; margin: 0; accent-color: var(--book-accent); }
+.conceptOption > span { flex: 1; }
+.inlineField.inlineField { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.inlineField > span { flex: 0 0 130px; }
+.inlineField.inlineField > :is(input, select) { flex: 0 1 290px; width: 290px; max-width: 100%; }
+.sectionDivider { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--line); }
+.contextLine { margin: 0 0 20px; font-size: 13px; line-height: 1.8; }
+.contextLine strong { font-weight: 600; }
+.compactForm > fieldset > section { margin-top: 0; }
+.compactForm > fieldset > section:first-child > .sectionHeading { border-top: 0; padding-top: 0; }
+.compactForm .contextLine { margin: 0; }
+.pageActions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+.statusMessage { padding: 24px 0; }
+.statusMessage h2 { font: 24px/1.4 Georgia, serif; margin-bottom: 12px; }
+.statusMessage p { color: var(--muted); font-size: 13px; line-height: 1.8; }
+.account { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 14px; }
+.account summary { cursor: pointer; }
+.account h2 { font: 16px/1.5 Georgia, serif; margin-top: 16px; }
+.account p { color: var(--muted); font-size: 11px; line-height: 1.6; margin-top: 6px; }
+.account dl { font-size: 10px; line-height: 1.6; margin-top: 16px; }
+.account dt { color: var(--muted); margin-top: 10px; }
+.account dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+.focusTarget { height: 0; outline: none; }
+.allocation { font-size: 11px; color: var(--muted); margin-top: 10px; }
+.lessonFilter.lessonFilter { flex-basis: 240px; }
+.lessonFilter.lessonFilter select { width: 240px; }
+.coverage { width: 100%; margin: 22px 0 14px; }
+.coverage > div { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+.coverage strong { color: var(--book-accent-ink); }
+.coverage progress { display: block; appearance: none; width: 100%; height: 5px; border: 0; border-radius: 4px; background: var(--line); overflow: hidden; accent-color: var(--book-accent); }
+.coverage progress::-webkit-progress-bar { background: var(--line); }
+.coverage progress::-webkit-progress-value { background: var(--book-accent); border-radius: 4px; }
+.coverage progress::-moz-progress-bar { background: var(--book-accent); }
+.concepts { list-style: disc; padding-left: 20px; font-size: 13px; line-height: 1.8; }
+.concepts li { padding-block: 5px; }
+.workflow { font-size: 13px; line-height: 1.7; }
+@media (min-width: 551px) and (max-width: 850px) { .books { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 550px) { .account { margin-top: 10px; } }

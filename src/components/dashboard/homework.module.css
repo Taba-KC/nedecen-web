@@ -1,0 +1,24 @@
+.lessonSummary { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 10px 20px; margin-bottom: 24px; font-size: 13px; line-height: 1.7; }
+.lessonSummary p { margin: 0; }
+.lessonSummary strong { font-weight: 600; }
+.lessonChoices.lessonChoices > li { border: 0; padding: 16px 0; }
+.singleLine { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.sectionDivider { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--line); }
+.inlineField.inlineField { display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 10px 16px; }
+.inlineField > span { flex: 0 0 130px; }
+.inlineField.inlineField > :is(input, select) { flex: 0 1 290px; width: 290px; max-width: 100%; }
+.questionsHeading { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-block: 1px solid var(--line); padding-block: 14px; margin-bottom: 8px; }
+.questionsHeading h3 { margin: 0 !important; }
+.questionSummary { min-width: 0; padding: 16px 0; }
+.questionHeading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.questionHeading h3 { margin: 0 !important; font-size: 13px; }
+.questionActions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.questionLines { margin: 8px 0 0 16px; min-width: 0; }
+.questionLines > div { display: flex; min-width: 0; gap: 6px; line-height: 1.7; font-size: 12px; }
+.questionLines dt { flex-shrink: 0; color: var(--muted); }
+.questionLines dd { min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dialogFields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.memoComparison { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.memoComparison h3 { font-size: 13px; font-weight: 600; }
+.memoComparison del, .fullText { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.7; }
+.memoComparison .questionActions { margin-top: 14px; flex-wrap: wrap; }

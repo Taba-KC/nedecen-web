@@ -130,10 +130,15 @@ async function main() {
   await streamView.titleActions[1].run();
   assert.deepEqual(calls.at(-1), ["delete", "/schools/7/streams/21"]);
   const announcements = BOOKS.find(book => book.id === "announcements");
-  const announcementData = { ...(await announcements.load(7)), announcements: [{ id: 90, title: "School notice", body: "Welcome", audienceType: "all" }] };
-  const announcementView = await announcements.view({ schoolId: 7, data: announcementData, page: announcements.pages(announcementData)[0].children[0], tab: "" });
-  assert.deepEqual(announcementView.titleActions.map(action => [action.label, action.variant]), [["Edit announcement", "filled"], ["Delete announcement", "outline"]]);
-  assert.equal(announcementView.actions, undefined);
+  calls = [];
+  const announcementData = await announcements.load(7);
+  assert.deepEqual(calls, [], "The unfinished book does not fetch feature data");
+  const announcementPages = announcements.pages(announcementData);
+  assert.equal(announcementPages.length, 1);
+  assert.equal(announcementPages[0].title, "Still under development");
+  const announcementView = await announcements.view({ schoolId: 7, data: announcementData, page: announcementPages[0], tab: "" });
+  assert.equal(announcementView.titleActions, undefined);
+  assert.match(renderToStaticMarkup(announcementView.content), /still under development/);
   view = await streams.view({ schoolId: 7, data: streamData, page: streams.pages(streamData)[0], tab: "" });
   const form = new FormData(); form.append("subjects", "31"); form.append("subjects", "32");
   calls = []; failSubject = true;
@@ -165,7 +170,7 @@ async function main() {
     assert.equal(new Set(entries.map(page => page.id)).size, entries.length, `${book.id}: unique IDs`);
     const first = await book.view({ schoolId: 7, data: bookData, page: entries[0], tab: "" });
     assert.ok(first.description, `${book.id}: first page resolves`);
-    assert.equal(first.eyebrow, undefined, `${book.id}: no decorative intro label`);
+    assert.equal(first.eyebrow, book.id === "announcements" ? "Announcements" : undefined, `${book.id}: intro label only identifies the unfinished feature`);
     if (book.id === "staff") {
       assert.deepEqual(first.sections[0].actions[0].alternative, { label: "Bulk import staff", pageId: "import-staff" });
       assert.equal(first.links, undefined, "Staff import is paired with Add, not in a bottom Actions section");

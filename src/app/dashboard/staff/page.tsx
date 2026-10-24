@@ -1,3 +1,6 @@
-import RoleDashboard from "@/components/dashboard/RoleDashboard";
+import { Suspense } from "react";
+import TeacherBookWorkspace from "@/components/dashboard/teacher-books/TeacherBookWorkspace";
 
-export default function Page() { return <RoleDashboard role="staff" />; }
+export default function Page() {
+  return <Suspense fallback={<p className="p-8">Opening your teaching library…</p>}><TeacherBookWorkspace /></Suspense>;
+}

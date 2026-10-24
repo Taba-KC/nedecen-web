@@ -7,7 +7,7 @@ interface Curriculum {
   gradeNumber: number;
   className: string;
   coverage: { totalConcepts: number; taughtConcepts: number; percentage: number };
-  chapters: { id: number; name: string; topics: { id: number; name: string; concepts: { id: number; name: string; isTaught: boolean }[] }[] }[];
+  chapters: { id: number; name: string; topics: { id: number; name: string; concepts: { id: number; name: string; isTaught: boolean; prerequisites?: string[]; learningOutcomes?: string[] }[] }[] }[];
 }
 
 export function ClassCurriculum({ schoolId, classId, classSubjectId, subjectName, onBack }: {
@@ -51,7 +51,7 @@ export function ClassCurriculum({ schoolId, classId, classSubjectId, subjectName
               {chapter.topics.map(topic => <details key={topic.id} className="rounded-md border p-3" style={{ borderColor: "var(--color-border)" }}>
                 <summary className="cursor-pointer text-sm font-medium">{topic.name}</summary>
                 {topic.concepts.length ? <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm" style={{ color: "var(--color-school-charcoal)" }}>
-                  {topic.concepts.map(concept => <li key={concept.id} style={{ color: concept.isTaught ? "#166534" : "#171717" }}>{concept.name}{concept.isTaught && <span className="sr-only"> — confirmed taught</span>}</li>)}
+                  {topic.concepts.map(concept => <li key={concept.id} style={{ color: concept.isTaught ? "#166534" : "#171717" }}><details><summary className="cursor-pointer">{concept.name}{concept.isTaught && <span className="sr-only"> — confirmed taught</span>}</summary><div className="py-3"><strong>Prerequisites</strong>{concept.prerequisites?.length ? <ul className="my-2 list-disc space-y-1 pl-5">{concept.prerequisites.map((item, index) => <li key={index}>{item}</li>)}</ul> : <p className="my-2">None added.</p>}<strong>Learning outcomes</strong>{concept.learningOutcomes?.length ? <ul className="my-2 list-disc space-y-1 pl-5">{concept.learningOutcomes.map((item, index) => <li key={index}>{item}</li>)}</ul> : <p className="my-2">None added.</p>}</div></details></li>)}
                 </ol> : <p className="mt-3 text-xs" style={{ color: "var(--color-text-muted)" }}>No concepts yet.</p>}
               </details>)}
             </div>

@@ -1,27 +1,103 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api } from "@/lib/api";
 import type { Subject } from "./RoleDashboard";
+import TeacherSection from "./teacher-books/TeacherSection";
+import TeacherDialog from "./teacher-books/TeacherDialog";
+import ConceptRows from "./teacher-books/ConceptRows";
+import book from "@/components/principal/books/books.module.css";
 import styles from "./role-dashboard.module.css";
-type Planning = { chapter: Subject["curriculum"][number] | null; customConcepts: {id:number;name:string;topicId:number}[]; taughtConceptIds: number[]; flaggedConcepts: { id: number; name: string; didntUnderstand: number; totalLearners: number }[]; suggestedDate: string };
+import local from "./teacher-books/teacher-books.module.css";
+
+type PlanningConcept = { id: number; name: string; topicId: number; prerequisites: string[]; learningOutcomes: string[] };
+type Planning = {
+  chapter: Subject["curriculum"][number] | null;
+  customConcepts: PlanningConcept[];
+  reviewConcepts?: PlanningConcept[];
+  planningConcepts?: PlanningConcept[];
+  taughtConceptIds: number[];
+  flaggedConcepts: { id: number; name: string; didntUnderstand: number; totalLearners: number }[];
+  suggestedDate: string;
+};
+type CustomConcept = { name: string; topicId: number };
+
+function CustomConceptDialog({ topics, initial, onSave, onClose }: { topics: { id: number; name: string }[]; initial?: CustomConcept; onSave: (concept: CustomConcept) => void; onClose: () => void }) {
+  const [error, setError] = useState("");
+  const nameField = useRef<HTMLInputElement>(null);
+  useEffect(() => { nameField.current?.focus(); }, []);
+  function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const fields = new FormData(event.currentTarget);
+    const name = String(fields.get("name") ?? "").trim();
+    const topicId = Number(fields.get("topicId"));
+    if (!name || !topics.some(topic => topic.id === topicId)) { setError("Enter a concept and choose a topic."); return; }
+    onSave({ name, topicId }); onClose();
+  }
+  return <TeacherDialog title={initial ? "Custom concept" : "Add a concept"} onClose={onClose}><form onSubmit={save}>
+    <label>Concept<input ref={nameField} name="name" required maxLength={500} defaultValue={initial?.name} /></label>
+    <label>Topic<select name="topicId" defaultValue={initial?.topicId ?? topics[0]?.id}>{topics.map(topic => <option key={topic.id} value={topic.id}>{topic.name}</option>)}</select></label>
+    <p className={local.note}>This concept belongs to this class subject. It does not change the shared curriculum.</p>
+    {error && <p className={book.error} role="alert">{error}</p>}
+    <footer><button type="button" onClick={onClose}>Cancel</button><button type="submit" className={book.primary}>Save</button></footer>
+  </form></TeacherDialog>;
+}
+
 export default function PlanLessonForm({ subject, onSaved }: { subject: Subject; onSaved: () => void }) {
-  const [data,setData]=useState<Planning|null>(null), [error,setError]=useState(""), [busy,setBusy]=useState(false), [saved,setSaved]=useState(false);
-  const [selected,setSelected]=useState<number[]>([]), [date,setDate]=useState(""), [custom,setCustom]=useState<{name:string;topicId:number}[]>([]);
-  useEffect(()=>{let active=true;api.get<Planning>("/staff/class-subjects/"+subject.id+"/planning").then(result=>{if(!active)return;setData(result);setDate(result.suggestedDate);setSelected([...(result.chapter?.topics.flatMap(topic=>topic.concepts)??[]),...result.customConcepts].filter(concept=>!result.taughtConceptIds.includes(concept.id)).slice(0,2).map(concept=>concept.id));}).catch(err=>{if(active)setError(err.message);});return()=>{active=false;};},[subject.id]);
-  function toggle(id:number) {setSelected(current=>current.includes(id)?current.filter(item=>item!==id):[...current,id]);}
-  async function save(event:React.FormEvent) {event.preventDefault();if(!data?.chapter || busy)return;setBusy(true);setError("");try {await api.post("/staff/class-subjects/"+subject.id+"/plans",{chapterId:data.chapter.id,date,conceptIds:selected,customConcepts:custom});setSaved(true);onSaved();}catch(err){setError(err instanceof Error?err.message:"Could not save this plan.");}finally{setBusy(false);}}
-  if(saved)return <div className={styles.modalEmpty}><span className={styles.successMark}>✓</span><h3>Lesson plan saved</h3><p>Your class can preview the planned concepts. Confirm what was taught after the lesson; coverage changes only then.</p></div>;
-  if(!data)return <p role={error?"alert":"status"}>{error||"Loading your current chapter…"}</p>;
-  if(!data.chapter)return <p className={styles.empty}>There is no published curriculum in your teaching allocation yet. Ask your principal or app manager to check it.</p>;
-  const chapter=data.chapter, remaining=[...chapter.topics.flatMap(topic=>topic.concepts),...data.customConcepts].filter(concept=>!data.taughtConceptIds.includes(concept.id)), taught=[...chapter.topics.flatMap(topic=>topic.concepts),...data.customConcepts].filter(concept=>data.taughtConceptIds.includes(concept.id));
-  const checkbox=(concept:{id:number;name:string})=><label key={concept.id} className={styles.conceptChoice}><input type="checkbox" checked={selected.includes(concept.id)} onChange={()=>toggle(concept.id)}/><span>{concept.name}</span></label>;
-  return <form onSubmit={save} className={styles.workflowForm}><fieldset disabled={busy}>
-    <section className={styles.chapterHeader}><p className={styles.eyebrow}>Current chapter</p><h3>{chapter.name}</h3><div className={styles.progressLabel}><span>{chapter.taught} of {chapter.total} concepts taught</span></div><progress value={chapter.taught} max={chapter.total||1} aria-label="Chapter coverage"/></section>
-    {data.flaggedConcepts.length>0 && <section><h3>Worth revisiting</h3>{data.flaggedConcepts.map(concept=><div key={concept.id} className={styles.flaggedConcept}><strong>{concept.name}</strong><p>{concept.didntUnderstand} of {concept.totalLearners} learners said they didn’t understand this.</p><button type="button" className={styles.button} onClick={()=>toggle(concept.id)}>{selected.includes(concept.id)?"Added — tap to remove":"Add to next lesson"}</button></div>)}</section>}
-    <section><h3>Pick concepts for the next lesson</h3>{remaining.length?remaining.map(checkbox):<p className={styles.muted}>All ATP concepts in this chapter have been taught. You can revisit them below.</p>}</section>
-    <details className={styles.disclosure}><summary>Already taught<small>Select a concept to teach it again.</small></summary>{taught.length?taught.map(checkbox):<p className={styles.muted}>No confirmed concepts yet.</p>}</details>
-    <section><h3>Add a concept not on the ATP</h3>{custom.map((item,index)=><div key={index} className={styles.customConcept}><label>Concept name<input required maxLength={500} value={item.name} onChange={event=>setCustom(current=>current.map((row,i)=>i===index?{...row,name:event.target.value}:row))}/></label><label>Topic<select value={item.topicId} onChange={event=>setCustom(current=>current.map((row,i)=>i===index?{...row,topicId:Number(event.target.value)}:row))}>{chapter.topics.map(topic=><option key={topic.id} value={topic.id}>{topic.name}</option>)}</select></label><button type="button" className={styles.textButton} onClick={()=>setCustom(current=>current.filter((_,i)=>i!==index))}>Remove</button></div>)}<button type="button" className={styles.button} disabled={!chapter.topics.length||custom.length>=20} onClick={()=>setCustom(current=>[...current,{name:"",topicId:chapter.topics[0].id}])}>+ Add concept</button></section>
-    <label>Lesson date<input type="date" required value={date} onChange={event=>setDate(event.target.value)}/><small>Choose the date of your next lesson.</small></label>
-    {error&&<p role="alert" className={styles.formError}>{error}</p>}<button className={styles.primaryButton} disabled={busy||(!selected.length&&!custom.length)}>{busy?"Saving…":"Save lesson plan"}</button>
-  </fieldset></form>;
+  const [data, setData] = useState<Planning | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [selected, setSelected] = useState<number[]>([]);
+  const [date, setDate] = useState("");
+  const [custom, setCustom] = useState<CustomConcept[]>([]);
+  const [editing, setEditing] = useState<number | "new" | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let active = true;
+    api.get<Planning>(`/staff/class-subjects/${subject.id}/planning`).then(result => {
+      if (!active) return;
+      setData(result); setDate(result.suggestedDate);
+      setSelected((result.reviewConcepts ?? []).map(concept => concept.id));
+    }).catch(err => { if (active) setError(err instanceof Error ? err.message : "Could not load lesson concepts."); });
+    return () => { active = false; };
+  }, [subject.id, attempt]);
+
+  function toggle(id: number) {
+    setSelected(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
+  }
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    if (!data?.chapter || busy) return;
+    setBusy(true); setError("");
+    try {
+      await api.post(`/staff/class-subjects/${subject.id}/plans`, { chapterId: data.chapter.id, date, conceptIds: selected, reviewConceptIds: (data.reviewConcepts ?? []).map(concept => concept.id), customConcepts: custom });
+      setSaved(true); onSaved();
+    } catch (err) { setError(err instanceof Error ? err.message : "Could not save this plan."); }
+    finally { setBusy(false); }
+  }
+  if (saved) return <div className={local.statusMessage} role="status"><h2>Lesson plan saved</h2><p>Your class can preview the planned concepts. Confirm what was taught after the lesson to update coverage.</p></div>;
+  if (!data) return error ? <div className={book.viewError} role="alert"><span>{error}</span><button className={book.textButton} onClick={() => { setError(""); setAttempt(value => value + 1); }}>Try again</button></div> : <p className={book.empty} role="status">Loading lesson concepts…</p>;
+  if (!data.chapter) return <p className={book.empty}>No curriculum is available for this teaching allocation yet. Your school manages this list.</p>;
+  const chapter = data.chapter;
+  const ordered = data.planningConcepts ?? [];
+  const correctionIds = (data.reviewConcepts ?? []).map(concept => concept.id);
+  const concepts = ordered.map(concept => {
+    const flag = data.flaggedConcepts.find(item => item.id === concept.id);
+    return { ...concept, detail: [correctionIds.includes(concept.id) ? "Added from lesson feedback" : "Not taught yet", flag ? `${flag.didntUnderstand} of ${flag.totalLearners} learners need help` : ""].filter(Boolean).join(" · ") };
+  });
+  return <>
+    <form onSubmit={save} className={`${styles.workflowForm} ${local.compactForm}`}><fieldset disabled={busy}>
+      <TeacherSection title="Concepts" count={concepts.length + custom.length} action={<button type="button" className={book.contextButton} disabled={!chapter.topics.length || custom.length >= 20} onClick={() => setEditing("new")}>+ Add a concept</button>}>
+        <p className={local.note}>The first 10 untaught concepts, in curriculum order.{!!correctionIds.length && " Concepts added from lesson feedback are checked; uncheck any you don’t want to include."}</p>
+        {concepts.length ? <ConceptRows concepts={concepts} selectedIds={selected} onToggle={toggle} /> : <p className={book.empty}>All available concepts have been taught. Add concepts to a lesson from lesson feedback when you want to revisit them.</p>}
+        {custom.length > 0 && <ul className={`${book.rows} ${local.spacedRows}`}>{custom.map((concept, index) => <li key={index}><div className={local.rowBody}><strong className={local.singleLine}>{concept.name}</strong><small className={local.rowDetail}>Custom concept</small></div><button type="button" className={book.textButton} onClick={() => setEditing(index)}>Edit concept</button><button type="button" className={book.textButton} onClick={() => setCustom(current => current.filter((_, i) => i !== index))}>Remove</button></li>)}</ul>}
+      </TeacherSection>
+      <hr className={local.sectionDivider} />
+      <label className={local.inlineField}><span>Lesson date:</span><input type="date" required value={date} onChange={event => setDate(event.target.value)} /></label>
+      {error && <p role="alert" className={styles.formError}>{error}</p>}
+      <button className={styles.primaryButton} disabled={busy || (!selected.length && !custom.length)}>{busy ? "Saving…" : "Save lesson plan"}</button>
+    </fieldset></form>
+    {editing !== null && <CustomConceptDialog key={editing} topics={chapter.topics} initial={typeof editing === "number" ? custom[editing] : undefined} onClose={() => setEditing(null)} onSave={concept => setCustom(current => typeof editing === "number" ? current.map((row, i) => i === editing ? concept : row) : [...current, concept])} />}
+  </>;
 }

@@ -83,6 +83,7 @@
 .rowText { flex: 1; min-width: 120px; }
 .badge { font-size: 10px; color: #6f7768; cursor: default; }
 .textButton { font-size: 11px; color: var(--book-accent-ink); text-decoration: underline; text-underline-offset: 3px; }
+.boldLinks .textButton, .boldLinks .textButton:hover { font-weight: 600; text-decoration: none; }
 .empty { color: var(--muted); font-size: 12px; padding: 20px 0; line-height: 1.8; }
 .primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 17px; border-radius: 4px; font-size: 11px; font-weight: 500; border: 1px solid #d7ddce; }
 .workspace .primary { background: var(--book-accent-solid); color: #fffef9; border-color: var(--book-accent-solid); }

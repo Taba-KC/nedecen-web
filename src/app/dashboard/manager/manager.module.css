@@ -19,6 +19,12 @@
 .actions { gap:6px; margin:8px 0 14px; }
 .actions button { padding:5px 8px; font-size:12px; }
 .concept { border-top:1px solid #e6e8eb; padding:12px 0 2px; }
+.guidance { margin: 12px 0; }
+.guidance summary { cursor: pointer; font-size: 14px; font-weight: 600; }
+.guidance fieldset { border: 1px solid #d7dbe0; border-radius: 4px; padding: 12px; margin: 12px 0; display: grid; gap: 10px; min-width: 0; }
+.guidance legend { font-size: 14px; font-weight: 600; padding-inline: 4px; }
+.guidance input { width: 100%; }
+.templateLink { color: #762630; font-weight: 600; text-decoration: none; }
 .primary { background:#762630 !important; color:#fff !important; border-color:#762630 !important; }
 .error { color:#a31624; }
 .success { color:#126b35; }

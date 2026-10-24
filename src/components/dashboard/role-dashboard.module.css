@@ -122,3 +122,29 @@
 @media(max-width:640px){.featureGrid{grid-template-columns:1fr}.createCard{min-height:180px}.modeToggle button{padding:8px;font-size:12px}.questionEditor{padding:16px}.nav button{padding-inline:16px}.nav{gap:2px}}
 
 .historyQuestion{padding:8px 0}.savedMemo{white-space:pre-wrap;font-size:13px;color:var(--muted)}.historyQuestion .formActions{margin-top:12px}
+
+/* The teacher library shares these workflows with the original dashboard. */
+.paperWorkflows { --border: var(--line); color: var(--ink); color-scheme: light; }
+.paperWorkflows h3 { font-size: 13px; font-weight: 600; margin: 8px 0 12px; }
+.paperWorkflows p { margin-block: 10px; }
+.paperWorkflows .eyebrow { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .12em; }
+.paperWorkflows .workflowForm input:not([type=checkbox]), .paperWorkflows .workflowForm select, .paperWorkflows .workflowForm textarea, .paperWorkflows .lessonPicker select { border-color: var(--line); border-radius: 4px; background: var(--paper); color: var(--ink); }
+.paperWorkflows .workflowForm select option, .paperWorkflows .lessonPicker option { background: var(--paper); color: var(--ink); }
+.paperWorkflows .workflowForm :is(input,select,textarea):focus-visible, .paperWorkflows .lessonPicker select:focus-visible { outline-color: var(--book-accent-ink); }
+.paperWorkflows .conceptChoice { margin: 0; }
+.paperWorkflows .conceptChoice input { display: inline-block; width: 17px; height: 17px; padding: 0; margin: 2px 0 0; accent-color: var(--book-accent); }
+.paperWorkflows .button { background: var(--paper); border-color: var(--book-accent-border); border-radius: 4px; color: var(--book-accent-ink); white-space: normal; }
+.paperWorkflows .button:hover { background: var(--book-accent-hover); }
+.paperWorkflows .primaryButton { background: var(--book-accent-solid); border-color: var(--book-accent-solid); border-radius: 4px; font-size: 12px; }
+.paperWorkflows .primaryButton:hover { background: var(--book-accent-ink); }
+.paperWorkflows .textButton { color: var(--book-accent-ink)!important; }
+.paperWorkflows .textButton, .paperWorkflows .textButton:hover { font-weight: 600; text-decoration: none; }
+.paperWorkflows .modeToggle { border-radius: 4px; }
+.paperWorkflows .modeToggle button { border-radius: 3px; }
+.paperWorkflows .modeToggle button[aria-pressed=true], .paperWorkflows .flaggedConcept { background: var(--book-accent-soft); border-color: var(--book-accent-border); }
+.paperWorkflows .badge { color: var(--book-accent-ink); background: var(--book-accent-soft); }
+.paperWorkflows .modalEmpty h3 { color: var(--ink); }
+.paperWorkflows .successMark { background: var(--book-accent-soft); color: var(--book-accent-ink); }
+.paperWorkflows .formError { color: #8b3028; background: #f8e9e5; border-color: #e4beb4; }
+.paperWorkflows .chapterHeader progress { display: block; width: 100%; height: 5px; accent-color: var(--book-accent); }
+.paperWorkflows .savedMemo { color: var(--muted); }

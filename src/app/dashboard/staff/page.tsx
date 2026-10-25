@@ -1,3 +1,7 @@
+/**
+ * Entry point for /dashboard/staff. TeacherBookWorkspace owns the shelf, page selection and
+ * teaching data. This small route file connects Next.js routing to that component.
+ */
 import { Suspense } from "react";
 import TeacherBookWorkspace from "@/components/dashboard/teacher-books/TeacherBookWorkspace";
 

@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Create one manual question in a modal. Closing or cancelling does not add a question; Save
+ * first validates the text and concept, then passes the draft back to HomeworkForm.
+ */
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import TeacherDialog from "./teacher-books/TeacherDialog";
 import { readManualQuestion, type ManualQuestion } from "./manualQuestion";
@@ -11,6 +15,10 @@ export default function ManualQuestionDialog({ concepts, onSave, onClose }: { co
   const saved = useRef(false);
   useEffect(() => { questionField.current?.focus(); }, []);
 
+  /**
+   * Read/validate the form and only then call onSave. An empty question or Cancel never
+   * creates a draft item.
+   */
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saved.current) return;

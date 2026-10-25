@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Older pathname-based grade sidebar. It loads grades and finds the active ID in
+ * /grades/<id>. Current bookshelf navigation instead uses BookWorkspace and query
+ * parameters.
+ */
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { api } from "@/lib/api";

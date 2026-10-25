@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Reusable native modal for teacher workflows. The parent opens it by rendering it and
+ * closes it by removing it. showModal runs after mounting; busy can block accidental
+ * dismissal during a save.
+ */
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import styles from "@/components/principal/books/books.module.css";
 

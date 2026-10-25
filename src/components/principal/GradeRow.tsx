@@ -1,3 +1,7 @@
+/**
+ * Expandable grade row grouping its classes and grade actions. This belongs to the separate
+ * row-based principal components, rather than the current bookshelf page-tree renderer.
+ */
 import Link from "next/link";
 
 interface GradeRowProps {

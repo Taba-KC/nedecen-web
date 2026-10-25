@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Read-only view of concept guidance. For confirmed lessons the backend can supply a saved
+ * teaching-brief snapshot, preserving what was attached when the lesson was taught.
+ */
 import TeacherDialog from "./teacher-books/TeacherDialog";
 import TeacherSection from "./teacher-books/TeacherSection";
 import type { BriefState } from "./lessonBrief";

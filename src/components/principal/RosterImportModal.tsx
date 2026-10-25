@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Preview and edit a staff/learner spreadsheet before committing it. Uploading obtains
+ * proposed rows and validation issues; only the final Save request inserts accounts. Inline
+ * mode allows the same tool inside a book page.
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { BottomSheet } from "@/components/shared/BottomSheet";
@@ -51,6 +56,10 @@ export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptio
   }, [rows, existing, numberLabel, kind]);
   const invalid = issues.filter(issue => issue.length).length;
 
+  /**
+   * Upload the selected spreadsheet to get editable proposed rows and validation issues;
+   * preview does not insert accounts.
+   */
   async function preview(event: React.FormEvent) {
     event.preventDefault();
     if (!file || (kind === "learners" && !classId) || inFlight.current) return;
@@ -67,6 +76,10 @@ export function RosterImportModal({ schoolId, kind, onClose, onSaved, classOptio
     } catch (err) { if (mounted.current) setError(err instanceof Error ? err.message : "Could not preview spreadsheet."); }
     finally { inFlight.current = false; if (mounted.current) setBusy(false); }
   }
+  /**
+   * Submit the reviewed rows for final validation and atomic import. Refresh the parent
+   * register only after the server reports success.
+   */
   async function save() {
     if (!rows?.length || invalid || inFlight.current || saved !== null) return;
     inFlight.current = true; setBusy(true); setError(null);

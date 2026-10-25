@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Two-stage account setup shared by staff and learners: find the school record, then choose
+ * credentials to claim it. Lookup results are temporary form state; claiming performs the
+ * backend write.
+ */
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { lookupLearner, lookupStaff, claimLearnerAccount, claimStaffAccount, type PersonName } from "@/lib/onboarding";
@@ -22,6 +27,10 @@ export function AccountClaimPage({ kind }: { kind: "staff" | "learner" }) {
   const [success, setSuccess] = useState(false);
   const pending = useRef(false);
 
+  /**
+   * Look up the roster record first. A successful match enables credential setup but does not
+   * yet create a login session.
+   */
   async function findAccount(event: React.FormEvent) {
     event.preventDefault();
     if (pending.current) return;
@@ -36,6 +45,10 @@ export function AccountClaimPage({ kind }: { kind: "staff" | "learner" }) {
     finally { pending.current = false; setLoading(false); }
   }
 
+  /**
+   * Submit the selected record's claim information and credentials, then show the result or a
+   * server validation error.
+   */
   async function claimAccount(event: React.FormEvent) {
     event.preventDefault();
     if (pending.current) return;

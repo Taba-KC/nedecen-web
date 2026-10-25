@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Role-scoped dashboard data and subject selection, used by the learner route. It
+ * coordinates refreshes and delegates workflow details to smaller forms. Subject types here
+ * also describe data used by the teacher bookshelf.
+ */
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
@@ -14,6 +19,10 @@ type Lesson = { id: number; lessonNumber?: number; date: string; status: string;
 export type Subject = { id: number; subjectName: string; className: string; classId: number; gradeNumber: number; totalConcepts: number; taughtConcepts: number; currentChapter: { name: string } | null; curriculum: Chapter[]; lessons: Lesson[] };
 type Task = { id: string; classSubjectId: number; lessonId: number; subjectName: string; className: string; kind: string; date: string };
 type Dashboard = { profile: { firstName: string; surname: string; title?: string | null; username: string | null; number: string; schoolName: string; className: string | null }; subjects: Subject[]; needsYou: Task[]; waitingForYou: Task[]; comingUp: Task[]; announcements: { id: number; title: string; body: string; createdAt: string }[] };
+/**
+ * Format a stored date for display. Formatting a label does not change the saved lesson or
+ * due time.
+ */
 function dateLabel(value: string) {
   return new Intl.DateTimeFormat("en-ZA", { day: "numeric", month: "short", year: "numeric", timeZone: "Africa/Johannesburg" }).format(new Date(value.length === 10 ? value + "T12:00:00+02:00" : value));
 }
@@ -44,13 +53,24 @@ export default function RoleDashboard({ role }: { role: "staff" | "learner" }) {
   }, [fetchDashboard, role, router]);
   const subject = data?.subjects.find(item => item.id === selected);
   const tasks = data ? (staff ? data.needsYou : data.waitingForYou) : [];
+  /**
+   * Load a fresh role-specific dashboard after an operation changes its records.
+   */
   function refresh() {
     setLoading(true); setError("");
     fetchDashboard().then(setData)
       .catch(err => setError(err instanceof Error ? err.message : "Could not load your dashboard."))
       .finally(() => setLoading(false));
   }
+  /**
+   * Select an allocation and optional lesson in local state, then open its subject view. This
+   * component does not update the browser URL for that selection.
+   */
   function openSubject(id: number, lesson: number | null = null) { setSelected(id); setLessonId(lesson); setTab("subjects"); setStaffPanel(staff && lesson !== null ? "confirm" : null); }
+  /**
+   * Change the local tab and clear the prior subject/lesson/panel selection. This is a UI
+   * state change, not a database write.
+   */
   function openTab(next: "home" | "subjects" | "history") { setTab(next); setSelected(null); setLessonId(null); setStaffPanel(null); }
   function taskList(items: Task[], empty: string) {
     return items.length ? <ul className={styles.taskList}>{items.map(item => <li key={item.id}><button className={styles.task} onClick={() => { openSubject(item.classSubjectId, item.lessonId); if (staff && item.kind === "Create homework") setStaffPanel("createHomework"); }}><span><strong>{item.kind}</strong><span className={styles.meta}>{item.subjectName} · {item.className}</span></span><span className={styles.taskDate}>{dateLabel(item.date)} <span aria-hidden="true">→</span></span></button></li>)}</ul> : <p className={styles.empty}>{empty}</p>;
@@ -88,5 +108,12 @@ export default function RoleDashboard({ role }: { role: "staff" | "learner" }) {
     </main>
   </div>;
 }
+/**
+ * Display a progress indicator from supplied totals; calculation of permitted/taught records
+ * belongs to the data source.
+ */
 function Progress({ subject }: { subject: Subject }) { return <><div className={styles.progressLabel}><span>{subject.taughtConcepts} / {subject.totalConcepts} concepts taught</span><span>{subject.totalConcepts ? Math.round(subject.taughtConcepts / subject.totalConcepts * 100) : 0}%</span></div><progress value={subject.taughtConcepts} max={subject.totalConcepts || 1} aria-label="Confirmed curriculum coverage" /></>; }
+/**
+ * Render one supplied class-subject allocation and its action for opening details.
+ */
 function SubjectCard({ subject, staff, onOpen }: { subject: Subject; staff: boolean; onOpen: () => void }) { return <article className={styles.subjectCard}><p className={styles.eyebrow}>{subject.className} · Grade {subject.gradeNumber}</p><h2>{subject.subjectName}</h2>{staff && <><p className={styles.muted}>{subject.currentChapter?.name ?? "Curriculum pending"}</p><Progress subject={subject} /></>}<button className={styles.button} onClick={onOpen}>{staff ? "Open class subject" : "Explore subject"}<span aria-hidden="true"> →</span></button></article>; }

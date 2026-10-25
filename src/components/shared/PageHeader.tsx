@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Reusable page heading with optional supporting content/actions. Bookshelf pages have
+ * dedicated heading components, so edit the heading actually used by your route.
+ */
 interface PageHeaderProps {
   title: string;
   onBack?: () => void;

@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Learner feedback on concepts in a confirmed lesson. The two current responses are I get it
+ * and I don't get it. The server checks class membership and whether the feedback window
+ * remains open.
+ */
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import styles from "./role-dashboard.module.css";
@@ -18,6 +23,10 @@ export default function LessonFeedbackForm({ lessonId }: { lessonId: number }) {
     api.get<Feedback>(`/learners/me/lessons/${lessonId}/feedback`).then(result => { if (active) { setData(result); setError(""); } }).catch(err => { if (active) setError(err instanceof Error ? err.message : "Could not load lesson feedback."); });
     return () => { active = false; };
   }, [lessonId, attempt]);
+  /**
+   * Save or update this learner's binary response for one lesson concept, then update the
+   * displayed response after success.
+   */
   async function respond(lessonConceptId: number, reaction: Reaction) {
     if (submitting.current) return;
     submitting.current = true; setBusy(lessonConceptId); setError("");

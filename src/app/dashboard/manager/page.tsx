@@ -1,4 +1,10 @@
 "use client";
+/**
+ * Shared curriculum editor for app managers. It loads a subject and grade, edits a local
+ * chapter/topic/concept tree, previews spreadsheets, then explicitly saves through the
+ * manager API. Array order becomes curriculum order; record IDs preserve identity during
+ * edits.
+ */
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
@@ -10,7 +16,15 @@ type Chapter = { id?:number; name:string; topics:Topic[]; key:string };
 type RawChapter = { id?:number; name:string; topics:{ id?:number; name:string; concepts:{ id?:number; name:string; prerequisites?:string[]; learningOutcomes?:string[] }[] }[] };
 type Library = { subjectId:number; gradeNumber:number; revision:number; exists:boolean; chapters:RawChapter[] };
 type Sheet = { name:string; chapters:RawChapter[]; warnings:string[] };
+/**
+ * Browser keys keep unsaved items stable in React. Existing database IDs are retained
+ * separately for updates.
+ */
 const decorate = (rows:RawChapter[]):Chapter[] => rows.map(c => ({ ...c,key:crypto.randomUUID(),topics:c.topics.map(t => ({ ...t,key:crypto.randomUUID(),concepts:t.concepts.map(x => ({ ...x,key:crypto.randomUUID() })) })) }));
+/**
+ * Return a reordered copy of an array. Its new order becomes the curriculum order on Save;
+ * IDs remain attached to the same records.
+ */
 function move<T>(items:T[], i:number, d:number) { const next=[...items]; if(i+d<0||i+d>=items.length)return next; [next[i],next[i+d]]=[next[i+d],next[i]]; return next; }
 export default function ManagerCurriculum() {
  const router=useRouter();
@@ -23,10 +37,30 @@ export default function ManagerCurriculum() {
  useEffect(()=>{ if(getAccountType()!=="manager"){router.replace("/manager/login");return;} let cancelled=false;
  api.get<{id:number;name:string}[]>("/manager/subjects").then(rows=>{if(!cancelled){setSubjects(rows);setSubjectId(String(rows[0]?.id??""));setReady(true);}}).catch(e=>{if(!cancelled){setError(e.message);setReady(true);}});return()=>{cancelled=true;}; },[router]);
  useEffect(()=>{if(!dirty)return;const warn=(e:BeforeUnloadEvent)=>{e.preventDefault();};window.addEventListener("beforeunload",warn);return()=>window.removeEventListener("beforeunload",warn);},[dirty]);
+ /**
+  * Ask before replacing local edits. A successful local edit still needs an explicit server
+  * Save.
+  */
  const discard=()=>!dirty||window.confirm("Discard unsaved curriculum edits?");
+ /**
+  * Apply one local curriculum edit and mark the editor dirty; nothing is written to
+  * PostgreSQL yet.
+  */
  function change(fn:(items:Chapter[])=>Chapter[]){setChapters(items=>fn(structuredClone(items)));setDirty(true);setMessage("");}
+ /**
+  * Fetch the selected subject/grade curriculum together with its revision for later conflict
+  * detection.
+  */
  async function load(){if(!discard())return;setBusy(true);setError("");setMessage("");try{const result=await api.get<Library>("/manager/curricula/"+subjectId+"/"+grade);setLibrary(result);setChapters(decorate(result.chapters));setDirty(false);setSheets([]);}catch(e){setError(e instanceof Error?e.message:"Could not load curriculum");}finally{setBusy(false);}}
+ /**
+  * Send a spreadsheet for preview, then let the manager choose/review its parsed content
+  * before saving.
+  */
  async function upload(file:File){if(!discard())return;if(library?.exists&&!window.confirm("Review this spreadsheet as a replacement for the saved curriculum? Nothing changes until you save. Existing lesson history will be retained."))return;setBusy(true);setError("");setMessage("");try{const form=new FormData();form.append("file",file);const result=await api.upload<{sheets:Sheet[]}>("/manager/curricula/preview",form);setSheets(result.sheets);setSheetIndex(0);setChapters(decorate(result.sheets[0].chapters));setDirty(true);setMessage("Preview only. Edit labels below, then save.");}catch(e){setError(e instanceof Error?e.message:"Could not read workbook");}finally{setBusy(false);}}
+ /**
+  * Send the edited curriculum with its loaded revision. A conflict means another save
+  * happened and the editor must reload.
+  */
  async function save(){if(!library)return;setBusy(true);setError("");setMessage("");try{const result=await api.post<Library>("/manager/curricula",{subjectId:library.subjectId,gradeNumber:library.gradeNumber,revision:library.revision,chapters:chapters.map(chapter=>({...chapter,topics:chapter.topics.map(topic=>({...topic,concepts:topic.concepts.map(concept=>({...concept,prerequisites:(concept.prerequisites??[]).map(line=>line.trim()).filter(Boolean),learningOutcomes:(concept.learningOutcomes??[]).map(line=>line.trim()).filter(Boolean)}))}))}))});setLibrary(result);setChapters(decorate(result.chapters));setDirty(false);setSheets([]);setMessage("Curriculum saved. Continue editing or load another subject and grade.");}catch(e){setError(e instanceof Error?e.message:"Could not save curriculum");}finally{setBusy(false);}}
  return <main className={styles.page}>
  <header className={styles.header}><div><h1>Curriculum manager</h1><p>Upload → review labels and order → save to a subject and grade.</p></div><button disabled={busy} onClick={async()=>{if(!discard())return;const token=localStorage.getItem("refreshToken");if(token)await api.post("/auth/logout",{refreshToken:token}).catch(()=>{});logout();router.replace("/manager/login");}}>Sign out</button></header>

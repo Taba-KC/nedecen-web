@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Plan a lesson from the server's eligible concepts: the first ten untaught concepts plus
+ * queued reviews. Checkbox state is a draft until Save. Shared guidance comes from
+ * curriculum records; custom concepts belong only to this class subject.
+ */
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api } from "@/lib/api";
 import type { Subject } from "./RoleDashboard";
@@ -22,10 +27,18 @@ type Planning = {
 };
 type CustomConcept = { name: string; topicId: number };
 
+/**
+ * Edit one class-specific concept draft. Save reports it to the parent; it is not inserted
+ * into the shared curriculum.
+ */
 function CustomConceptDialog({ topics, initial, onSave, onClose }: { topics: { id: number; name: string }[]; initial?: CustomConcept; onSave: (concept: CustomConcept) => void; onClose: () => void }) {
   const [error, setError] = useState("");
   const nameField = useRef<HTMLInputElement>(null);
   useEffect(() => { nameField.current?.focus(); }, []);
+  /**
+   * Validate this one custom concept and pass it to the parent draft; no database write
+   * happens in this modal.
+   */
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const fields = new FormData(event.currentTarget);
@@ -43,6 +56,10 @@ function CustomConceptDialog({ topics, initial, onSave, onClose }: { topics: { i
   </form></TeacherDialog>;
 }
 
+/**
+ * Load server-approved planning choices, keep selected IDs locally and submit the explicit
+ * selection when the teacher saves.
+ */
 export default function PlanLessonForm({ subject, onSaved }: { subject: Subject; onSaved: () => void }) {
   const [data, setData] = useState<Planning | null>(null);
   const [error, setError] = useState("");
@@ -53,6 +70,10 @@ export default function PlanLessonForm({ subject, onSaved }: { subject: Subject;
   const [custom, setCustom] = useState<CustomConcept[]>([]);
   const [editing, setEditing] = useState<number | "new" | null>(null);
   const [attempt, setAttempt] = useState(0);
+  /**
+   * Load only the choices the backend permits for this allocation. Queued review concepts
+   * begin checked; a late response is ignored after switching away.
+   */
   useEffect(() => {
     let active = true;
     api.get<Planning>(`/staff/class-subjects/${subject.id}/planning`).then(result => {
@@ -63,14 +84,26 @@ export default function PlanLessonForm({ subject, onSaved }: { subject: Subject;
     return () => { active = false; };
   }, [subject.id, attempt]);
 
+  /**
+   * Create a new selected-ID array when checking/unchecking a concept so React notices the
+   * state change.
+   */
   function toggle(id: number) {
     setSelected(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
   }
+  /**
+   * Send the selected concept IDs and date to create the plan, then refresh the parent after
+   * success.
+   */
   async function save(event: FormEvent) {
     event.preventDefault();
     if (!data?.chapter || busy) return;
     setBusy(true); setError("");
     try {
+      /**
+       * Send selected IDs separately from the suggestions shown. This lets the server consume
+       * reviewed suggestions even when the teacher unchecked them.
+       */
       await api.post(`/staff/class-subjects/${subject.id}/plans`, { chapterId: data.chapter.id, date, conceptIds: selected, reviewConceptIds: (data.reviewConcepts ?? []).map(concept => concept.id), customConcepts: custom });
       setSaved(true); onSaved();
     } catch (err) { setError(err instanceof Error ? err.message : "Could not save this plan."); }
@@ -80,6 +113,10 @@ export default function PlanLessonForm({ subject, onSaved }: { subject: Subject;
   if (!data) return error ? <div className={book.viewError} role="alert"><span>{error}</span><button className={book.textButton} onClick={() => { setError(""); setAttempt(value => value + 1); }}>Try again</button></div> : <p className={book.empty} role="status">Loading lesson concepts…</p>;
   if (!data.chapter) return <p className={book.empty}>No curriculum is available for this teaching allocation yet. Your school manages this list.</p>;
   const chapter = data.chapter;
+  /**
+   * Display the backend's curriculum order. Do not reinsert all previously taught concepts
+   * here.
+   */
   const ordered = data.planningConcepts ?? [];
   const correctionIds = (data.reviewConcepts ?? []).map(concept => concept.id);
   const concepts = ordered.map(concept => {

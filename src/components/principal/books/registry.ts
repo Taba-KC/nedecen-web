@@ -1,3 +1,8 @@
+/**
+ * The principal's book catalogue and feature definitions. Each book loads API data, turns it
+ * into a page tree, then supplies rows/actions for the selected page. To add a book,
+ * register a definition here; change the shared shell in BookWorkspace, not in each feature.
+ */
 import { api } from "@/lib/api";
 import { createElement } from "react";
 import { ClassCurriculum } from "@/components/principal/ClassCurriculum";
@@ -6,6 +11,10 @@ import { classLabel, learnerName, nameOf, optionsOf, streamLabel } from "./types
 
 const get = (path: string) => api.get<RecordItem[]>(path);
 const base = (id: number) => `/schools/${id}`;
+/**
+ * These helpers describe controls/actions as data. The shared workspace creates the actual
+ * HTML from these descriptions.
+ */
 const text = (name: string, label: string, value = "", required = true): Field => ({ name, label, value, required });
 const select = (name: string, label: string, items: RecordItem[], value = "", required = false): Field => ({ name, label, value, required, type: "select", options: optionsOf(items) });
 const remove = (label: string, path: string, warning = "This cannot be undone."): Command => ({ label: "Delete", title: `Delete ${label}`, confirm: warning, run: async () => { await api.delete(path); } });
@@ -28,12 +37,20 @@ function underDevelopmentBook(details: Pick<BookDefinition, "id" | "title" | "su
   };
 }
 
+/**
+ * Load grades first, then load their classes in parallel. Combine the responses into the
+ * data shape used by several principal books.
+ */
 async function structure(schoolId: number): Promise<BookData> {
   const grades = (await get(`${base(schoolId)}/grades`)).sort((a, b) => Number(a.number) - Number(b.number));
   const classes = (await Promise.all(grades.map(grade => get(`${base(schoolId)}/grades/${grade.id}/classes`)))).flat();
   return { grades, classes };
 }
 
+/**
+ * Describe the Add/Edit class dialog and save payload. Return the saved class's page ID so
+ * the workspace can open it after refreshing.
+ */
 function classCommand(schoolId: number, data: BookData, grade: RecordItem, cls?: RecordItem): Command {
   return {
     label: cls ? "Edit class" : `Create a class in Grade ${grade.number}`,
@@ -51,6 +68,10 @@ function classCommand(schoolId: number, data: BookData, grade: RecordItem, cls?:
   };
 }
 
+/**
+ * Describe the staff/learner creation dialog. Convert select values to numeric IDs before
+ * sending the appropriate account payload.
+ */
 function personCommand(schoolId: number, kind: "staff" | "learners", classes: RecordItem[] = [], classId = ""): Command {
   return {
     label: kind === "staff" ? "Add staff member" : "Add learner",
@@ -63,8 +84,16 @@ function personCommand(schoolId: number, kind: "staff" | "learners", classes: Re
   };
 }
 
+/**
+ * Shelf order comes from this array. Each definition's stable id is the ?book= value; mark
+ * is only the printed cover label.
+ */
 export const BOOKS: BookDefinition[] = [
   {
+    /**
+     * Grades & Classes: build parent grade pages, child class pages and learner-import
+     * grandchildren from saved records.
+     */
     id: "grades", title: "Grades & Classes", subtitle: "Your school, organised", mark: "01", color: "#8b413d",
     description: "Browse grades and classes, manage class teachers and subjects, and add learners to their class.",
     load: async schoolId => { const [data, streams, people] = await Promise.all([structure(schoolId), get(`${base(schoolId)}/streams`), get(`${base(schoolId)}/people`)]); return { ...data, streams, people }; },
@@ -112,6 +141,9 @@ export const BOOKS: BookDefinition[] = [
     },
   },
   {
+    /**
+     * Streams: manage subject groupings that determine a class's active subject allocations.
+     */
     id: "streams", title: "Streams", subtitle: "Subjects that belong together", mark: "02", color: "#536b58",
     description: "Create subject bundles for your school, then assign them to classes. Changes to a stream do not rewrite existing class teaching records.",
     load: async schoolId => { const [streams, subjects] = await Promise.all([get(`${base(schoolId)}/streams`), get("/subjects")]); return { streams, subjects }; },
@@ -140,6 +172,10 @@ export const BOOKS: BookDefinition[] = [
     },
   },
   {
+    /**
+     * Staff register: filters/search change the displayed roster; actions delegate saving to the
+     * people API.
+     */
     id: "staff", title: "Staff", subtitle: "The people behind the school", mark: "03", color: "#536680",
     description: "Keep your staff register, review account activation and teaching assignments, and import staff from a spreadsheet.",
     load: async schoolId => ({ people: await get(`${base(schoolId)}/people`) }),
@@ -155,6 +191,9 @@ export const BOOKS: BookDefinition[] = [
     },
   },
   {
+    /**
+     * Learner register: class choices and roster actions are derived from school records.
+     */
     id: "learners", title: "Learners", subtitle: "Every learner accounted for", mark: "04", color: "#96713d",
     description: "Browse learners across your school, check account activation, and add or import learners into a class.",
     load: async schoolId => { const data = await structure(schoolId); return data; },
@@ -174,6 +213,10 @@ export const BOOKS: BookDefinition[] = [
     description: "Announcements will be a place to share school news, reminders and important updates. You will be able to publish messages for everyone, a grade, a class or a stream, and edit or remove announcements as needed.",
   }),
   {
+    /**
+     * Curriculum browsing reuses the subject/grade library rather than inventing another
+     * independent copy.
+     */
     id: "curriculum", title: "Curriculum", subtitle: "See the learning journey", mark: "06", color: "#4d7778",
     description: "Explore the curriculum by grade and subject, then view chapters and concepts in each subject.",
     load: async schoolId => {

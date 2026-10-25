@@ -1,3 +1,7 @@
+/**
+ * Pure animation calculations: given a turning direction and progress, build page-sheet
+ * motion values. These functions do not save data or change the selected URL.
+ */
 export const PAGE_TURN_DURATION = 340;
 
 // The free edge rolls from right to left; the reverse side widens mid-turn.
@@ -11,6 +15,10 @@ const forwardFold = [
   { offset: 1, edge: 0, width: 0 },
 ];
 
+/**
+ * Calculate front/back/curl/shadow keyframes for the requested direction, keeping motion
+ * math separate from React rendering.
+ */
 export function pageTurnFrames(backward: boolean) {
   const folds = backward ? forwardFold.toReversed().map(frame => ({ ...frame, offset: 1 - frame.offset })) : forwardFold;
   const front: Keyframe[] = [];
@@ -28,6 +36,9 @@ export function pageTurnFrames(backward: boolean) {
   return { front, back, curl, shadow };
 }
 
+/**
+ * Stagger sheet timing to make the visual layers behave like pages turning together.
+ */
 export function pageTurnSchedule(distance: number) {
   const count = Math.abs(distance) > 4 ? 6 : Math.abs(distance);
   return Array.from({ length: count }, (_, index) => ({ delay: index * 18, duration: PAGE_TURN_DURATION - index * 18 }));

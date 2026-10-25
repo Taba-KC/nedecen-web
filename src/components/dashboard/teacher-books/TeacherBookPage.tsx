@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Choose the body component for a teacher page.kind. Class/subject nodes show links; task
+ * nodes open planning, confirmation or homework forms. This dispatch connects registry page
+ * objects to real UI.
+ */
 import { useState } from "react";
 import type { Subject } from "../RoleDashboard";
 import PlanLessonForm from "../PlanLessonForm";
@@ -19,16 +24,28 @@ export type Navigate = (bookId?: TeacherBookId, pageId?: string, lessonId?: numb
 type Props = { bookId: TeacherBookId; page: TeacherPage; navigate: Navigate; refresh: () => void; selectedLessonId: number | null; homeworkMode?: HomeworkMode };
 const formClass = `${workflow.paperWorkflows} ${styles.workflow}`;
 
+/**
+ * Display a supplied taught/total count. Confirmation on the backend determines coverage;
+ * rendering this number does not change it.
+ */
 export function Coverage({ subject }: { subject: Subject }) {
   const percentage = subject.totalConcepts ? Math.round(subject.taughtConcepts / subject.totalConcepts * 100) : 0;
   return <div className={styles.coverage}><div><span>{subject.taughtConcepts} / {subject.totalConcepts} concepts taught</span><strong>{percentage}%</strong></div><progress value={subject.taughtConcepts} max={subject.totalConcepts || 1} aria-label={`Confirmed curriculum coverage for ${allocationName(subject)}`} /></div>;
 }
 const Section = TeacherSection;
+/**
+ * Show child-page links using the workspace navigation callback so URL and contents
+ * selection stay in sync.
+ */
 export function PageLinks({ pages, bookId, navigate, empty }: { pages: TeacherPage[]; bookId: TeacherBookId; navigate: Navigate; empty: string }) {
   const description = (page: TeacherPage) => page.chapter ? `${page.chapter.taught} / ${page.chapter.total} concepts taught` : page.kind === "subject" ? page.subject?.currentChapter?.name ?? "Curriculum pending" : page.kind === "plan" ? "Choose concepts and a lesson date" : page.kind === "confirm" ? "Record the concepts you taught" : page.kind === "compose" ? "Prepare questions from a taught lesson" : page.kind === "lesson-feedback" ? "Review understanding and plan corrections" : "Open this page";
   return pages.length ? <ul className={`${book.rows} ${styles.spacedRows}`}>{pages.map(page => <li key={page.id}><div className={styles.rowBody}><strong className={styles.singleLine}>{page.title}</strong><small className={styles.rowDetail}>{description(page)}</small></div><button type="button" className={book.textButton} onClick={() => navigate(bookId, page.id)}>Open<span className="sr-only"> {page.title}</span></button></li>)}</ul> : <p className={book.empty}>{empty}</p>;
 }
 
+/**
+ * List planned lessons, allow a full plan preview, and offer confirmation only when the date
+ * permits it.
+ */
 function ConfirmTaughtLessons({ subject, selectedLessonId, navigate, refresh }: { subject: Subject; selectedLessonId: number | null; navigate: Navigate; refresh: () => void }) {
   const [viewing, setViewing] = useState<Subject["lessons"][number] | null>(null);
   const [selected, setSelected] = useState<Subject["lessons"][number] | null>(() => subject.lessons.find(lesson => lesson.id === selectedLessonId && lesson.status === "planned" && lesson.date <= today()) ?? null);
@@ -42,6 +59,10 @@ function ConfirmTaughtLessons({ subject, selectedLessonId, navigate, refresh }: 
   </>;
 }
 
+/**
+ * Dispatch the selected kind to its form or list. A new kind in the registry needs a
+ * matching branch here to become a usable page.
+ */
 export default function TeacherBookPage({ bookId, page, navigate, refresh, selectedLessonId, homeworkMode }: Props) {
   const subject = page.subject;
   if (page.kind === "under-development") return <Section title="About Announcements"><p className={styles.note}>School news, reminders and important updates will appear here when this feature is ready.</p></Section>;

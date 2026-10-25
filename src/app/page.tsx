@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * The public / sign-in screen. Form state belongs here; actual login requests and token
+ * storage belong in lib/auth.ts. Successful login redirects to a dashboard chosen from the
+ * returned account type and role.
+ */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login, getRole, getRedirectPath } from "@/lib/auth";

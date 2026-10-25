@@ -1,9 +1,25 @@
+/**
+ * Homework composer layout: lesson context, compact question summaries, right-aligned
+ * actions and inline date/memo controls. Ellipsis is visual only; full question/memo text
+ * stays in state.
+ */
 .lessonSummary { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 10px 20px; margin-bottom: 24px; font-size: 13px; line-height: 1.7; }
 .lessonSummary p { margin: 0; }
 .lessonSummary strong { font-weight: 600; }
 .lessonChoices.lessonChoices > li { border: 0; padding: 16px 0; }
+/**
+ * Visual truncation only: keep full text in data and show details in a View modal.
+ * min-width:0 allows shrinking inside flex rows.
+ */
 .singleLine { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/**
+ * One boundary between content and settings; do not add rules between every compact item.
+ */
 .sectionDivider { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--line); }
+/**
+ * Keep a field label beside its control with deliberate widths, while allowing wrapping on
+ * smaller screens.
+ */
 .inlineField.inlineField { display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 10px 16px; }
 .inlineField > span { flex: 0 0 130px; }
 .inlineField.inlineField > :is(input, select) { flex: 0 1 290px; width: 290px; max-width: 100%; }

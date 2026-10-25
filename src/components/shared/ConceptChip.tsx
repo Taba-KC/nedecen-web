@@ -1,3 +1,7 @@
+/**
+ * Small visual label for a concept and its status/interaction. It displays values supplied
+ * by its parent and does not calculate teaching coverage or write feedback itself.
+ */
 type ChipColor = "default" | "green" | "amber" | "red";
 
 const colorMap: Record<ChipColor, { bg: string; text: string }> = {

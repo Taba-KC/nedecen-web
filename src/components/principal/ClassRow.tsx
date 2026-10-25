@@ -1,3 +1,7 @@
+/**
+ * Reusable class list row and its management controls. Receives class data and callbacks
+ * from its parent; the current bookshelf also has its own row renderer in BookWorkspace.
+ */
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 function PencilIcon() {

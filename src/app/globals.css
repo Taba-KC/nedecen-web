@@ -1,3 +1,8 @@
+/**
+ * Application-wide design tokens, resets and shared visual utilities. Local workflow styles
+ * belong in CSS modules. Theme variables apply across components; do not change a global
+ * selector to fix only one book.
+ */
 @import "tailwindcss";
 
 /* Shared principal dashboard theme, independent of the global theme. */

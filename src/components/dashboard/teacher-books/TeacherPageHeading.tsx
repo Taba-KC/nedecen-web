@@ -1,3 +1,7 @@
+/**
+ * Shared sticky teacher heading: large title, optional controls beside it, and subtitle
+ * below. Content placed inside this header stays with the title when the paper body scrolls.
+ */
 import type { ReactNode } from "react";
 import book from "@/components/principal/books/books.module.css";
 import styles from "./teacher-books.module.css";

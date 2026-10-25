@@ -1,3 +1,8 @@
+/**
+ * Structural regression checks for principal books, page trees and actions. The script loads
+ * TypeScript through a controlled test harness; it does not prove browser layout or replace
+ * a live UI check.
+ */
 /* Exercise the book model against an in-memory API; never touches school data. */
 /* eslint-disable @typescript-eslint/no-require-imports -- The isolated test loader intercepts CommonJS imports to stub the API. */
 const assert = require("node:assert/strict");

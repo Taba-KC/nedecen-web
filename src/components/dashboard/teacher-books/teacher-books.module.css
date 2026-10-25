@@ -1,21 +1,41 @@
+/**
+ * Teacher-specific refinements layered over the shared bookshelf styles. Section borders,
+ * compact rows and heading spacing implement the teacher design language without changing
+ * every principal screen.
+ */
 .note { font-size: 12px; line-height: 1.8; color: var(--muted); }
 .pageContent { display: flow-root; padding-top: 24px; }
 .pageContent > section:first-child { margin-top: 0; }
+/**
+ * Section title/action alignment and divider rules. Check neighbouring borders before adding
+ * another separator.
+ */
 .pageContent > section:first-child > .sectionHeading { border-top: 0; padding-top: 0; }
 .sectionHeading { border-block: 1px solid var(--line); padding-block: 14px; margin-bottom: 8px; min-height: 49px; }
 .sectionHeading h2 { font-size: 13px; font-weight: 600; }
 .sectionAction { margin-left: auto; }
 .spacedRows.spacedRows > li { border: 0; padding: 16px 0; flex-wrap: nowrap; }
 .rowBody { flex: 1; min-width: 0; }
+/**
+ * Visual truncation only: keep full text in data and show details in a View modal.
+ * min-width:0 allows shrinking inside flex rows.
+ */
 .singleLine { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rowDetail { display: block; font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.6; }
 .detailText { white-space: pre-wrap; overflow-wrap: anywhere; }
 .conceptOption.conceptOption { display: flex; flex-direction: row; align-items: center; gap: 12px; margin: 0; padding: 0; min-width: 0; }
 .conceptOption.conceptOption input { flex: 0 0 16px; width: 16px; height: 16px; margin: 0; accent-color: var(--book-accent); }
 .conceptOption > span { flex: 1; }
+/**
+ * Keep a field label beside its control with deliberate widths, while allowing wrapping on
+ * smaller screens.
+ */
 .inlineField.inlineField { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 .inlineField > span { flex: 0 0 130px; }
 .inlineField.inlineField > :is(input, select) { flex: 0 1 290px; width: 290px; max-width: 100%; }
+/**
+ * One boundary between content and settings; do not add rules between every compact item.
+ */
 .sectionDivider { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--line); }
 .contextLine { margin: 0 0 20px; font-size: 13px; line-height: 1.8; }
 .contextLine strong { font-weight: 600; }

@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Read-only shared curriculum view for one class subject. Show chapters, topics and concept
+ * guidance, with coverage derived from this class's confirmed lessons. Editing shared
+ * curriculum belongs to the manager screen.
+ */
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 

@@ -1,3 +1,7 @@
+/**
+ * Static code-quality rules used by npm run lint. These checks inspect source code; they do
+ * not run the application or validate database records.
+ */
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";

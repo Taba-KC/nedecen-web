@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Teacher feedback for one selected confirmed lesson. Load the last ten lessons, show the
+ * selected lesson's concepts, and open count details. Add to next lesson calls the server,
+ * which chooses an existing upcoming plan or a queued draft.
+ */
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { dateLabel } from "./registry";
@@ -15,12 +20,20 @@ export type FeedbackConcept = { id: number; name: string; canReview: boolean; te
 export type LessonFeedbackSet = { id: number; lessonId: number; lessonNumber: number; lessonDate: string; createdAt: string; chapterName: string; totalLearners: number; concepts: FeedbackConcept[] };
 type Selection = { lesson: LessonFeedbackSet; concept: FeedbackConcept };
 
+/**
+ * Show the selected concept's response counts and the action that queues it for the next
+ * lesson.
+ */
 function ConceptDialog({ selection, onClose, onAdded }: { selection: Selection; onClose: () => void; onAdded: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const submitting = useRef(false);
   const { lesson, concept } = selection;
+  /**
+   * Ask the backend to place this concept in an upcoming plan or draft. Success describes the
+   * destination; it does not mark the old concept untaught.
+   */
   async function add() {
     if (submitting.current || message) return;
     submitting.current = true; setBusy(true); setError("");
@@ -48,6 +61,10 @@ function ConceptDialog({ selection, onClose, onAdded }: { selection: Selection; 
   </TeacherDialog>;
 }
 
+/**
+ * Select one of the loaded recent lessons beside the title. The selected ID determines which
+ * concept list is displayed.
+ */
 export function LessonFeedbackFilter({ lessons, selectedId, loading, failed, onChange }: { lessons: LessonFeedbackSet[]; selectedId?: number; loading: boolean; failed: boolean; onChange: (id: number) => void }) {
   return <label className={`${book.filterDropdown} ${styles.lessonFilter}`}><span className="sr-only">Select lesson to review</span>
     <select value={selectedId ?? ""} disabled={loading || failed || lessons.length === 0} onChange={event => onChange(Number(event.target.value))}>
@@ -58,6 +75,10 @@ export function LessonFeedbackFilter({ lessons, selectedId, loading, failed, onC
   </label>;
 }
 
+/**
+ * Render the selected lesson's already expanded concepts, including loading/error/empty
+ * states and a detail modal.
+ */
 export function LessonFeedbackContent({ lesson, onSelectConcept }: { lesson: LessonFeedbackSet; onSelectConcept: (concept: FeedbackConcept) => void }) {
   return <>
     <TeacherSection title="Concepts" count={lesson.concepts.length}>
@@ -67,6 +88,10 @@ export function LessonFeedbackContent({ lesson, onSelectConcept }: { lesson: Les
   </>;
 }
 
+/**
+ * Own the recent-feedback request and selected lesson. Keep the selector, subtitle and
+ * concept list based on the same selection.
+ */
 export default function LessonFeedback({ subject, onAdded }: { subject: Subject; onAdded: () => void }) {
   const [data, setData] = useState<LessonFeedbackSet[] | null>(null);
   const [error, setError] = useState("");

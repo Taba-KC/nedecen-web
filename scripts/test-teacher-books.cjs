@@ -1,3 +1,8 @@
+/**
+ * Structural checks for teacher books, page ordering, leaf tasks and related helpers.
+ * Fixture records model teaching assignments without requiring a teacher to click through
+ * the browser.
+ */
 /* In-memory checks for teacher book navigation and workflow availability. */
 /* eslint-disable @typescript-eslint/no-require-imports -- Isolated TypeScript loader for local checks. */
 const assert = require("node:assert/strict");

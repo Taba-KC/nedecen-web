@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Reusable overlay that becomes a centred panel on desktop and a bottom sheet on smaller
+ * screens. It handles presentation and body-scroll locking; its children own their form
+ * values and save actions.
+ */
 import { useEffect, useState } from "react";
 
 interface BottomSheetProps {

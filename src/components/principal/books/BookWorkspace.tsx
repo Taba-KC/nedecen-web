@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * The principal bookshelf shell. URL parameters select a book/page/tab; the registry
+ * supplies data and content; this component draws contents, paper, controls and covers.
+ * Database writes are delegated to Commands, then data is refreshed so the page tree
+ * reflects saved records.
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -10,10 +16,18 @@ import { classLabel, findPagePath, flattenPages, type BookData, type BookPage, t
 import styles from "./books.module.css";
 import { usePageTurn } from "./usePageTurn";
 
+/**
+ * Draw a small navigation icon. back changes its direction; this function does not perform
+ * navigation.
+ */
 function Arrow({ back = false }: { back?: boolean }) {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d={back ? "m14 6-6 6 6 6" : "m10 6 6 6-6 6"} /></svg>;
 }
 
+/**
+ * Recursively draw the contents tree. Each child uses the same component, so nesting comes
+ * from data rather than separate page files.
+ */
 function Contents({ pages, active, onNavigate }: { pages: BookPage[]; active?: string; onNavigate: (id: string) => void }) {
   return <ol className={styles.contentsList}>{pages.map(page => <li key={page.id}>
     <button type="button" onClick={() => onNavigate(page.id)} aria-current={active === page.id ? "page" : undefined} className={active === page.id ? styles.currentHeading : undefined}>
@@ -23,6 +37,10 @@ function Contents({ pages, active, onNavigate }: { pages: BookPage[]; active?: s
   </li>)}</ol>;
 }
 
+/**
+ * Load the subjects for the currently selected stream. Ignore a late response after this
+ * preview is replaced or closed.
+ */
 function SelectionPreview({ value, load }: { value: string; load: (value: string) => Promise<string[]> }) {
   const [items, setItems] = useState<string[] | null>(null);
   const [error, setError] = useState("");
@@ -35,6 +53,10 @@ function SelectionPreview({ value, load }: { value: string; load: (value: string
   return <div className={styles.selectionPreview}><strong>Subjects in this stream</strong>{error ? <p role="alert">{error}</p> : !items ? <p>Loading subjects…</p> : items.length ? <ul>{items.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}</ul> : <p>This stream has no subjects.</p>}</div>;
 }
 
+/**
+ * Render a book-provided action as a form. Cancel only closes it; the database action runs
+ * through command.run after a valid submission.
+ */
 function CommandDialog({ command, onClose, onSaved }: { command: Command; onClose: () => void; onSaved: (pageId?: string) => Promise<void> }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [busy, setBusy] = useState(false);
@@ -42,6 +64,10 @@ function CommandDialog({ command, onClose, onSaved }: { command: Command; onClos
   const [selection, setSelection] = useState<Record<string, string>>({});
   const submitting = useRef(false);
   useEffect(() => { dialog.current?.showModal(); }, []);
+  /**
+   * Collect named fields, trim required values and guard against duplicate submissions.
+   * Refresh from the server before closing the successful dialog.
+   */
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting.current) return;
@@ -74,6 +100,10 @@ function CommandDialog({ command, onClose, onSaved }: { command: Command; onClos
   </dialog>;
 }
 
+/**
+ * Render the shared page structure from PageView: sticky title/filters, sections, rows and
+ * custom content. Book definitions supply the values and actions.
+ */
 /** The single page surface. Books provide data and actions, never their own layout. */
 function WorkspacePage({ view, title, query, onQuery, tab, onTab, onNavigate, onCommand, schoolId, data, onRefresh, stale, error, onRetry }: {
   view: PageView; title: string; query: string; onNavigate: (id: string) => void; onCommand: (command: Command) => void;
@@ -82,18 +112,30 @@ function WorkspacePage({ view, title, query, onQuery, tab, onTab, onNavigate, on
   stale: boolean; error: string | null; onRetry: () => void;
 }) {
   const params = useSearchParams();
+  /**
+   * Preserve the current book query while selecting another page, and reset a filter that may
+   * not apply to the destination.
+   */
   function pageHref(pageId: string) {
     const next = new URLSearchParams(params.toString());
     next.set("page", pageId);
     next.delete("tab");
     return `/dashboard/principal?${next}`;
   }
+  /**
+   * Distinguish navigation-only actions from form/command actions instead of treating every
+   * button as a save.
+   */
   function activate(action: Command) {
     if (action.pageId) onNavigate(action.pageId);
     else onCommand(action);
   }
   const outlineActions = (view.titleActions?.length ?? 0) + (view.sections ?? []).reduce((count, section) => count + (section.actions?.length ?? 0), 0) > 1;
   const actionClass = (action: Command) => `${styles.contextButton} ${action.variant === "outline" || (!action.variant && outlineActions && !action.alternative) ? styles.outlineButton : ""}`;
+  /**
+   * Place a page/section action with the shared button treatment and optional alternative
+   * link.
+   */
   function contextAction(action: Command) {
     return <span className={styles.actionPair} key={action.label}>
       <button type="button" className={actionClass(action)} onClick={() => activate(action)}>{action.label}</button>
@@ -136,13 +178,24 @@ function WorkspacePage({ view, title, query, onQuery, tab, onTab, onNavigate, on
   </>;
 }
 
+/**
+ * Coordinate URL selection, data loading, page content and refreshes. The registry owns
+ * feature definitions; this component owns their common shell.
+ */
 export function BookWorkspace() {
   const router = useRouter();
   const params = useSearchParams();
+  /**
+   * The path opens this workspace; query parameters choose its internal book, page and filter.
+   */
   const bookId = params.get("book");
   const pageId = params.get("page");
   const tab = params.get("tab") ?? "";
   const book = BOOKS.find(item => item.id === bookId);
+  /**
+   * Remember fetched records separately from the selected view. Refresh revisions let a
+   * successful write trigger another load.
+   */
   const [loaded, setLoaded] = useState<{ bookId: string; data: BookData; revision: number } | null>(null);
   const [viewState, setViewState] = useState<{ key: string; pageKey: string; view: PageView } | null>(null);
   const [viewAttempt, setViewAttempt] = useState(0);
@@ -220,6 +273,10 @@ export function BookWorkspace() {
     previousIndex.current = index;
   }, [bookId, pageId, index, sheet, turn]);
 
+  /**
+   * Build the principal book/page/tab query, animate the outgoing page and push browser
+   * history without scrolling the whole window.
+   */
   function navigate(nextBook: string, nextPage?: string, nextTab?: string) {
     if (importChanged.current) { importChanged.current = false; setRevision(value => value + 1); }
     const search = new URLSearchParams({ book: nextBook });
@@ -235,6 +292,10 @@ export function BookWorkspace() {
     router.push(`/dashboard/principal?${search}`, { scroll: false });
     setQuery("");
   }
+  /**
+   * Reload book data after a change. A returned page ID can open a newly created record once
+   * the tree is rebuilt.
+   */
   async function refresh(nextPage?: string) {
     if (nextPage && book) navigate(book.id, nextPage);
     setRevision(value => value + 1);

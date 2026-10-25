@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * View and edit a single draft question in full. Local edits reach the parent only after
+ * Save. Memo regeneration asks the backend for a replacement draft; the teacher still
+ * decides whether to keep it.
+ */
 import { useState, type FormEvent } from "react";
 import { api } from "@/lib/api";
 import TeacherDialog from "./teacher-books/TeacherDialog";
@@ -19,6 +24,10 @@ export default function HomeworkQuestionDialog({ number, question, concepts, les
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  /**
+   * Request a proposed worked memo using the teacher's correction note. Keep the edited draft
+   * in the dialog until Save.
+   */
   async function regenerate() {
     if (busy || !body.trim() || !note.trim()) return;
     setBusy(true); setError("");
@@ -28,6 +37,10 @@ export default function HomeworkQuestionDialog({ number, question, concepts, les
     } catch (err) { setError(err instanceof Error ? err.message : "Could not regenerate this memo."); }
     finally { setBusy(false); }
   }
+  /**
+   * Validate the edited question and pass accepted values to the parent; closing the dialog
+   * without this step discards its local edits.
+   */
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || candidate !== null) return;

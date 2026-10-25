@@ -1,4 +1,8 @@
 "use client";
+/**
+ * Teaching-assignment cards and their modal/detail selection. This is a separate card-based
+ * component; the current staff route enters TeacherBookWorkspace instead.
+ */
 import { useEffect, useRef, useState } from "react";
 import type { Subject } from "./RoleDashboard";
 import PlanLessonForm from "./PlanLessonForm";
@@ -8,8 +12,19 @@ import QuestionMemoEditor from "./QuestionMemoEditor";
 import styles from "./role-dashboard.module.css";
 export type StaffPanel = "plan" | "createHomework" | "coverage" | "lessons" | "homework" | "confirm";
 const titles: Record<StaffPanel,string> = { plan:"Plan a lesson",createHomework:"Create homework",coverage:"Curriculum Coverage",lessons:"Lessons",homework:"Homework",confirm:"Confirm what was taught" };
+/**
+ * Add the visible Grade prefix only when needed; keep the stored class identity unchanged.
+ */
 function classLabel(subject:Subject){return /^grade\s/i.test(subject.className)?subject.className:"Grade "+subject.className;}
+/**
+ * Format a stored date for display. Formatting a label does not change the saved lesson or
+ * due time.
+ */
 function dateLabel(value:string){return new Intl.DateTimeFormat("en-ZA",{day:"numeric",month:"short",year:"numeric",timeZone:"Africa/Johannesburg"}).format(new Date(value.length===10?value+"T12:00:00+02:00":value));}
+/**
+ * Get the school calendar date in South Africa, independently of the browser machine's
+ * timezone.
+ */
 function today(){return new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Johannesburg",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());}
 export default function StaffClasses({subjects,selectedId,onSelect,onBack,panel,onPanelChange,lessonId,onRefresh,refreshing,history}: {
  subjects:Subject[];selectedId:number|null;onSelect:(id:number)=>void;onBack:()=>void;panel:StaffPanel|null;onPanelChange:(panel:StaffPanel|null)=>void;lessonId:number|null;onRefresh:()=>void;refreshing:boolean;history:boolean;

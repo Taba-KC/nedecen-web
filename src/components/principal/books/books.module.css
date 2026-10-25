@@ -1,14 +1,26 @@
+/**
+ * Shared bookshelf design system: book accent variables, three-column layout, contents,
+ * sticky paper heading, rows, dialogs and page-turn layers. Teacher books reuse this file,
+ * so shell changes can affect both roles.
+ */
 .workspace { --ink: #30352f; --muted: #7c8076; --line: #e4e4db; --paper: #fffef9; --green: #435749; --book-accent: #435749; --book-accent-ink: color-mix(in srgb, var(--book-accent) 80%, #1e241e); --book-accent-solid: color-mix(in srgb, var(--book-accent) 85%, #182018); --book-accent-soft: color-mix(in srgb, var(--book-accent) 14%, var(--paper)); --book-accent-hover: color-mix(in srgb, var(--book-accent) 8%, var(--paper)); --book-accent-border: color-mix(in srgb, var(--book-accent) 35%, var(--line)); --color-text: #30352f; --color-text-muted: #7c8076; --color-border: #dedfd4; --color-card: #fffef9; --color-accent: var(--book-accent-ink); --color-accent-muted: var(--book-accent-soft); --color-focus: var(--book-accent-ink); --grade-action-bg: var(--book-accent-solid); --control-height: 44px; background: #eeefe8; color: var(--ink); min-height: 100dvh; font-family: Arial, Helvetica, sans-serif; color-scheme: light; }
 .workspace button, .workspace a, .workspace input, .workspace select, .workspace textarea { -webkit-tap-highlight-color: transparent; }
 .workspace button { cursor: pointer; }
 .workspace button:disabled { cursor: default; opacity: .35; }
 .workspace :is(button,a,input,select,textarea,summary):focus-visible { outline: 2px solid var(--book-accent-ink); outline-offset: 4px; }
+/**
+ * The application header sits outside the paper's content scroller.
+ */
 .topbar { height: 86px; display: flex; align-items: center; justify-content: space-between; padding: 0 36px; border-bottom: 1px solid var(--line); }
 .brand { font-family: Georgia, serif; font-size: 21px; letter-spacing: .08em; font-weight: bold; color: var(--green); text-decoration: none; }
 .brand span { display: block; font: 10px Arial, sans-serif; letter-spacing: .12em; color: var(--muted); margin-top: 5px; text-transform: uppercase; }
 .role { font-size: 12px; color: var(--muted); }
 .topbar > button { font-size: 12px; border: 1px solid #d6d9ce; padding: 9px 13px; border-radius: 5px; }
 .topbar > button span { margin-left: 8px; }
+/**
+ * The three columns are contents, the flexible open book, and the shelf. minmax(0,1fr) lets
+ * long content shrink rather than force overflow.
+ */
 .layout { display: grid; grid-template-columns: 214px minmax(0,1fr) 244px; gap: 28px; max-width: 1800px; margin: auto; padding: 32px 30px 28px; height: calc(100dvh - 86px); min-height: 500px; }
 .contents, .shelf { min-width: 0; overflow-y: auto; scrollbar-width: thin; }
 .shelf { scrollbar-gutter: stable; padding-inline: 10px; }
@@ -20,6 +32,10 @@
 .contentsIntro h2 { font: 20px/1.3 Georgia,serif; margin: 8px 0; }
 .contentsIntro > span:last-child { font-size: 11px; color: var(--muted); }
 .contentsIntro p { font-size: 12px; color: var(--muted); }
+/**
+ * Nested ordered lists draw the page hierarchy. Active styling uses stable page IDs selected
+ * by the workspace.
+ */
 .contentsList { list-style: none; margin: 0; padding: 0; }
 .contentsList .contentsList { padding-left: 10px; border-left: 1px solid #dadccf; margin-left: 9px; }
 .contentsList button { display: flex; align-items: baseline; width: 100%; text-align: left; gap: 9px; padding: 10px 8px; border-radius: 4px; font-size: 12px; line-height: 1.4; color: #6c7266; overflow-wrap: anywhere; }
@@ -29,6 +45,9 @@
 .currentHeading .pageNumber { color: var(--book-accent-ink); }
 .pageNumber { flex-shrink: 0; font-size: 10px; color: #949a8d; min-width: 19px; font-variant-numeric: tabular-nums; }
 .sideNote { font-size: 11px; line-height: 1.8; color: #8a8f82; padding: 24px 8px; }
+/**
+ * The binder/paper containers establish the open-book surface and its available height.
+ */
 .binder { position: relative; min-width: 0; min-height: 0; padding: 0 0 6px 24px; isolation: isolate; }
 .binder::before, .binder::after { content: ''; position: absolute; background: #f8f7f0; border: 1px solid #dadccd; border-radius: 5px; inset: 6px -4px 3px 28px; z-index: -1; }
 .binder::after { inset: 10px -7px 0 32px; z-index: -2; }
@@ -45,14 +64,26 @@
 .toolbarActions button { padding: 5px 0; }
 .pageBody { position: relative; flex: 1; min-width: 0; min-height: 0; display: flex; }
 .pageViewport { position: relative; flex: 1; min-width: 0; min-height: 0; display: flex; overflow: hidden; }
+/**
+ * This is the scrolling part of the paper. Toolbars and footers outside it stay still; its
+ * sticky heading stays visible inside it.
+ */
 .pageScroll { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 0 var(--page-inset) 40px; scrollbar-width: thin; }
 .spine { position: absolute; left: -12px; top: 16px; bottom: 16px; display: flex; flex-direction: column; justify-content: space-between; z-index: 6; pointer-events: none; }
 .spine span { width: 26px; height: 11px; flex-shrink: 0; border: 2px solid #a7aca0; border-left-color: #d8dbd1; border-radius: 8px; background: linear-gradient(#e4e7df,#969d8f 48%,#c8cdc2); box-shadow: 0 2px 2px #30352f28; }
 
+/**
+ * Sticky title/filter area. The opaque paper background prevents scrolling text from showing
+ * through it.
+ */
 .pageHeading { position: sticky; top: 0; z-index: 2; background: var(--paper); padding: 20px 0 16px; border-bottom: 1px solid var(--line); }
 .titleRow { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
 .titleRow h1 { flex: 0 1 auto; min-width: min(100%, 160px); margin: 0; font: 34px/1.2 Georgia,serif; letter-spacing: -.035em; overflow-wrap: anywhere; }
 .headingControls { display: flex; flex: 1 1 auto; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 10px 16px; max-width: 100%; }
+/**
+ * Push a page/section action group to the far edge using flex layout, rather than literal
+ * spaces or absolute positioning.
+ */
 .headingControls .contextActions { margin-left: auto; }
 .contextActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-left: auto; }
 .actionPair { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 9px; }
@@ -71,9 +102,17 @@
 .selectionPreview { border: 1px solid var(--book-accent-border); background: var(--book-accent-hover); padding: 12px; margin-top: 12px; border-radius: 4px; font-size: 12px; }
 .selectionPreview ul { padding-left: 18px; margin-top: 8px; line-height: 1.8; list-style: disc; }
 .section { margin-top: 20px; }
+/**
+ * Section title/action alignment and divider rules. Check neighbouring borders before adding
+ * another separator.
+ */
 .sectionHeading { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
 .sectionHeading h2 { font-size: 12px; font-weight: 600; }
 .sectionHeading > span { font-size: 10px; background: #eef0e7; color: #7d8674; padding: 2px 6px; border-radius: 3px; }
+/**
+ * Shared list structure. Individual features can use compact spacing without changing saved
+ * text.
+ */
 .rows { list-style: none; padding: 0; }
 .rows li { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 14px 0; border-bottom: 1px solid #eceee5; }
 .rowLink { width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
@@ -104,6 +143,10 @@
 .pageFooter > span { text-align: center; }
 .pageFooter strong { color: var(--book-accent-ink); font-weight: 600; }
 .pageFooter button { display: flex; align-items: center; gap: 5px; color: var(--book-accent-ink); padding: 6px; }
+/**
+ * Temporary, non-interactive animation layers. They visually copy pages but must not become
+ * a second set of active controls.
+ */
 .turnLayers { position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: inherit; z-index: 4; visibility: hidden; contain: layout paint; }
 .turnLayers[data-turning] { visibility: visible; }
 .turnUnderlay, .turnSheet { position: absolute; inset: 0; overflow: hidden; }
@@ -120,6 +163,10 @@
 .books { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 27px 18px; padding-block: 10px 12px; }
 .bookTile { min-width: 0; }
 .bookButton { width: 100%; text-align: left; }
+/**
+ * Closed-book appearance. --book-color themes a cover; --book-accent themes the currently
+ * open workspace.
+ */
 .cover { display: flex; flex-direction: column; position: relative; aspect-ratio: .72; width: 100%; color: #fffef4; background: linear-gradient(90deg,#0003 0,#0001 5%,#fff1 7%,transparent 9%),var(--book-color); border-radius: 2px 5px 5px 2px; box-shadow: 3px 3px 0 #d4d5c8, 4px 4px 0 #b3baa7, 5px 7px 10px #30352f15; padding: 11px 10px 10px 14px; transition: transform 160ms ease; }
 .bookButton:hover .cover { transform: translateY(-3px); }
 .bookButton[aria-pressed=true] .cover { outline: 2px solid var(--book-accent); outline-offset: 5px; }
@@ -144,6 +191,10 @@
 .loading h1 { font: 26px Georgia,serif; margin: 12px 0 30px; }
 .loading > div { background: #eff1e7; height: 12px; border-radius: 3px; margin-top: 16px; width: 90%; }
 .loading > div:last-child { width: 55%; }
+/**
+ * Native dialog presentation. Opening/closing and Save/Cancel behaviour are controlled by
+ * React, not by this CSS.
+ */
 .dialog { position: fixed; inset: 0; margin: auto; width: min(520px,calc(100vw - 32px)); max-height: 85dvh; padding: 28px; border: 1px solid #dce1d1; border-radius: 8px; background: #fffef9; color: #30352f; box-shadow: 0 16px 60px #19281b33; }
 .dialog::backdrop { background: #27312766; }
 .dialog header { display: flex; align-items: start; justify-content: space-between; gap: 20px; margin-bottom: 24px; }

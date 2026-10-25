@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Compact concept list with optional selection checkboxes and a View action. The parent owns
+ * selected IDs; this component reports toggles and opens a brief viewer without marking
+ * anything taught.
+ */
 import { useId, useState } from "react";
 import TeacherDialog from "./TeacherDialog";
 import book from "@/components/principal/books/books.module.css";

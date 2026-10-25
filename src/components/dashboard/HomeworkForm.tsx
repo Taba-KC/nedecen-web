@@ -1,4 +1,9 @@
 "use client";
+/**
+ * Select a confirmed lesson and compose its homework. Draft questions, due time and
+ * memo-release choices stay in browser state until Send. Only the final homework request
+ * writes the set and its questions to the database.
+ */
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { Subject } from "./RoleDashboard";
@@ -14,10 +19,22 @@ import local from "./homework.module.css";
 import TeacherSection from "./teacher-books/TeacherSection";
 type Context = { concepts:{id:number;name:string}[]; existingHomeworkId:number|null; aiAvailable:boolean; chapterName:string };
 type Question = { key:string; conceptId:number; body:string; memo:string };
+/**
+ * Prepare tomorrow's local date/time string for datetime-local. Submission later converts
+ * the chosen time to an ISO timestamp.
+ */
 function localDateTime() { const date=new Date(Date.now()+86400000);date.setMinutes(date.getMinutes()-date.getTimezoneOffset());return date.toISOString().slice(0,16); }
+/**
+ * Choose among taught lessons without homework. Keeping selection here lets the composer
+ * reset when the chosen lesson changes.
+ */
 export default function HomeworkForm({ subject, lessonId, onSent, mode }: { subject:Subject; lessonId:number|null; onSent:()=>void; mode?:HomeworkMode }) {
  const [internalMode,setInternalMode]=useState<HomeworkMode>("manual");
  const activeMode=mode??internalMode;
+ /**
+  * A confirmed lesson needs at least one taught concept and no existing homework before it
+  * can be selected.
+  */
  const eligible=subject.lessons.filter(lesson=>lesson.status==="confirmed"&&!lesson.homework.length&&lesson.concepts.length>0);
  const [picking,setPicking]=useState(false);
  const [chosen,setChosen]=useState(eligible.find(lesson=>lesson.id===lessonId)?.id??eligible[0]?.id??null);
@@ -30,14 +47,38 @@ export default function HomeworkForm({ subject, lessonId, onSent, mode }: { subj
   {picking&&<TeacherDialog title="Pick another lesson" onClose={()=>setPicking(false)}><ul className={`${book.rows} ${local.lessonChoices}`}>{choices.map(lesson=><li key={lesson.id}><button type="button" className={book.rowLink} aria-current={lesson.id===chosen?"true":undefined} onClick={()=>{setChosen(lesson.id);setPicking(false);}}><span><strong>{lessonName(lesson, subject)} - {dateLabel(lesson.date)}</strong><small>{lesson.chapterName}</small></span>{lesson.id===chosen?<span className={book.badge}>Selected</span>:<span aria-hidden="true">→</span>}</button></li>)}</ul></TeacherDialog>}
  </>;
 }
+/**
+ * Own one lesson's unsent questions and release settings. The React key on this component
+ * deliberately starts a fresh draft for a different lesson.
+ */
 function HomeworkComposer({ lessonId,onSent,mode,onModeChange }:{lessonId:number;onSent:()=>void;mode:HomeworkMode;onModeChange?:(mode:HomeworkMode)=>void}) {
+ /**
+  * All of these values are an unsent draft. Calling a state setter changes the browser, not
+  * PostgreSQL.
+  */
  const [context,setContext]=useState<Context|null>(null),[counts,setCounts]=useState<Record<number,number>>({}),[draft,setDraft]=useState<Question[]>([]),[error,setError]=useState(""),[busy,setBusy]=useState(false),[sent,setSent]=useState(false);
  const [questionDialogOpen,setQuestionDialogOpen]=useState(false);
  const [viewedQuestion,setViewedQuestion]=useState<string|null>(null);
  const [dueDate,setDueDate]=useState(localDateTime),[release,setRelease]=useState("at_due_date"),[releaseAt,setReleaseAt]=useState("");
+ /**
+  * Fetch confirmed concepts and initial generation counts. Cleanup stops an old request from
+  * updating a replaced composer.
+  */
  useEffect(()=>{let active=true;api.get<Context>("/staff/lessons/"+lessonId+"/homework-context").then(result=>{if(!active)return;setContext(result);setCounts(Object.fromEntries(result.concepts.map(concept=>[concept.id,2])));}).catch(err=>{if(active)setError(err.message);});return()=>{active=false;};},[lessonId]);
+ /**
+  * Replace one draft question by its stable browser key. This local edit is not a database
+  * update.
+  */
  function edit(key:string,patch:Partial<Question>){setDraft(current=>current.map(question=>question.key===key?{...question,...patch}:question));}
+ /**
+  * Request AI drafts for the confirmed concepts and append validated results. Generating
+  * questions does not send homework to learners.
+  */
  async function generate(){if(busy||!context)return;setBusy(true);setError("");try{const result=await api.post<{questions:{conceptId:number;body:string;memo:string}[]}>("/staff/lessons/"+lessonId+"/generate-homework",{counts:context.concepts.map(concept=>({conceptId:concept.id,count:counts[concept.id]??0}))});setDraft(current=>[...current,...result.questions.map(question=>({...question,key:crypto.randomUUID(),}))]);}catch(err){setError(err instanceof Error?err.message:"Could not generate homework.");}finally{setBusy(false);}}
+ /**
+  * Validate non-empty questions, convert local times to ISO, then send the complete set. Only
+  * report success after the server confirms the write.
+  */
  async function send(event:React.FormEvent){event.preventDefault();if(busy)return;if(!draft.length||draft.some(question=>!question.body.trim())){setError("Add a non-empty question before sending homework.");return;}setBusy(true);setError("");try{await api.post("/staff/lessons/"+lessonId+"/homework",{dueDate:new Date(dueDate).toISOString(),memoReleaseType:release,...(release==="custom"?{memoReleaseAt:new Date(releaseAt).toISOString()}:{}),questions:draft.map(question=>({conceptId:question.conceptId,body:question.body,memo:question.memo}))});setSent(true);onSent();}catch(err){setError(err instanceof Error?err.message:"Could not send homework.");}finally{setBusy(false);}}
  if(sent)return <div className={styles.modalEmpty}><span className={styles.successMark}>✓</span><h3>Homework sent</h3><p>Your class can now see these questions. Worked memos follow your release setting.</p></div>;
  if(!context)return <p role={error?"alert":"status"}>{error||"Loading confirmed concepts…"}</p>;

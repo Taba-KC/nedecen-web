@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Reusable labelled input. Focus and value determine the floating-label appearance; normal
+ * input props and events still connect the control to the owning form.
+ */
 import { useState } from "react";
 
 interface FloatingLabelInputProps {

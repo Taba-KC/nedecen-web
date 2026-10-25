@@ -1,4 +1,8 @@
 "use client";
+/**
+ * Dedicated manager sign-in screen. It uses the manager login helper, then opens the shared
+ * curriculum dashboard after successful authentication.
+ */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { loginManager } from "@/lib/auth";

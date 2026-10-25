@@ -1,3 +1,7 @@
+/**
+ * Styles for role dashboards and workflow forms reused by lesson/homework components. The
+ * bookshelf shell itself is styled by principal/books/books.module.css.
+ */
 
 .shell{flex:1 0 auto;color-scheme:dark;min-height:100dvh;background:radial-gradient(ellipse at 0% 0%,#ffffff08,transparent 65%),radial-gradient(ellipse at 100% 100%,#5c20241a,transparent 65%),linear-gradient(135deg,#262626,#1b1b1b 50%,#121212);color:#f3f2f5;padding:28px clamp(18px,3.2vw,60px) 40px;--muted:#b8b9c3;--border:#b4b4b41f;font-size:15px}
 .shell button,.shell a{ -webkit-tap-highlight-color:transparent }

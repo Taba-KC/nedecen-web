@@ -1,3 +1,8 @@
+/**
+ * Shared teacher section heading and body. The action prop puts an Add button on the same
+ * line at the right edge; count is a display badge. Reuse this to keep section rules and
+ * spacing consistent.
+ */
 import type { ReactNode } from "react";
 import book from "@/components/principal/books/books.module.css";
 import styles from "./teacher-books.module.css";

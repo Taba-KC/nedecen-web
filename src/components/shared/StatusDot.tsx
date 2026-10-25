@@ -1,3 +1,7 @@
+/**
+ * Small presentational status indicator. Its supplied status decides appearance; it does not
+ * poll the server or work out account status.
+ */
 interface StatusDotProps {
   status: "active" | "pending";
 }

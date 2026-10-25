@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * The teacher bookshelf shell and owner of loaded teaching data. It reads book/page/lesson
+ * from the URL, selects a tree node, and delegates the page body. Homework mode is local
+ * state; it is not currently a URL tab.
+ */
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,14 +19,26 @@ import TeacherPageHeading from "./TeacherPageHeading";
 import styles from "@/components/principal/books/books.module.css";
 import local from "./teacher-books.module.css";
 
+/**
+ * Draw a small navigation icon. back changes its direction; this function does not perform
+ * navigation.
+ */
 function Arrow({ back = false }: { back?: boolean }) {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d={back ? "m14 6-6 6 6 6" : "m10 6 6 6-6 6"} /></svg>;
 }
 
+/**
+ * Recursively draw the contents tree. Each child uses the same component, so nesting comes
+ * from data rather than separate page files.
+ */
 function Contents({ pages, current, navigate }: { pages: TeacherPage[]; current?: string; navigate: (id: string) => void }) {
   return <ol className={styles.contentsList}>{pages.map(page => <li key={page.id}><button type="button" className={page.id === current ? styles.currentHeading : undefined} aria-current={page.id === current ? "page" : undefined} onClick={() => navigate(page.id)}><span className={styles.pageNumber}>{page.number}</span><span>{page.title}</span></button>{!!page.children?.length && <Contents pages={page.children} current={current} navigate={navigate} />}</li>)}</ol>;
 }
 
+/**
+ * Load the teacher dashboard, derive page nodes and select a body from the URL. Request
+ * sequence IDs stop an older refresh from replacing newer data.
+ */
 export default function TeacherBookWorkspace() {
   const router = useRouter();
   const params = useSearchParams();
@@ -32,6 +49,10 @@ export default function TeacherBookWorkspace() {
   const [about, setAbout] = useState<string | null>(null);
   const [homeworkMode, setHomeworkMode] = useState<HomeworkMode>("manual");
   const requestId = useRef(0);
+  /**
+   * Rebuild navigation from loaded assignments. Page numbers can change when ordering changes;
+   * stable page IDs still refer to the same allocation.
+   */
   const pages = useMemo(() => book && data ? teacherPages(book.id, data.subjects) : [], [book, data]);
   const flat = useMemo(() => flattenTeacherPages(pages), [pages]);
   const page = flat.find(item => item.id === params.get("page")) ?? flat[0];
@@ -44,6 +65,10 @@ export default function TeacherBookWorkspace() {
   const heading = useRef<HTMLDivElement>(null);
   const previous = useRef<{ location: string; book?: string; index: number } | null>(null);
   const animated = useRef("");
+  /**
+   * Only the newest request may replace displayed data. The signal is checked here to ignore
+   * stale results; api.get itself is not passed an AbortSignal.
+   */
   const loadDashboard = useCallback((signal?: AbortSignal) => {
     const attempt = ++requestId.current;
     return api.get<TeacherDashboard>("/staff/me/dashboard").then(result => {
@@ -54,12 +79,20 @@ export default function TeacherBookWorkspace() {
       if (!signal?.aborted && attempt === requestId.current) setRefreshing(false);
     });
   }, []);
+  /**
+   * Clear the current load error and request fresh dashboard data after a lesson/homework
+   * operation succeeds.
+   */
   function refresh() {
     setRefreshing(true);
     setError("");
     void loadDashboard();
   }
 
+  /**
+   * Browser routing guard for a suitable workspace. This improves navigation; server-side
+   * authorization remains essential.
+   */
   useEffect(() => {
     if (!isLoggedIn()) { router.replace("/"); return; }
     const account = getAccountType();
@@ -80,6 +113,10 @@ export default function TeacherBookWorkspace() {
     previous.current = { location, book: book?.id, index };
   }, [book?.id, index, location, turn]);
 
+  /**
+   * Changing books/pages updates browser history, not the database. A lesson parameter
+   * optionally opens one selected lesson's composer.
+   */
   const navigate: Navigate = (bookId, pageId, lessonId) => {
     const search = new URLSearchParams();
     if (bookId) search.set("book", bookId);

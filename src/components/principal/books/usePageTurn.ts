@@ -1,8 +1,17 @@
 "use client";
 
+/**
+ * Animate a visual copy of the outgoing page while React opens the next page. Snapshots are
+ * temporary DOM clones used only for the animation; the real form and application state
+ * remain in the workspace.
+ */
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { pageTurnFrames, pageTurnSchedule } from "./pageTurnMotion";
 
+/**
+ * Clone the current visual page for animation, including displayed form values. A clone is
+ * presentation only and must not become another live editable form.
+ */
 /** A temporary, inert picture of the visible DOM, not another mounted page. */
 function snapshot(source: HTMLElement) {
   const copy = source.cloneNode(true) as HTMLElement;
@@ -28,6 +37,10 @@ function snapshot(source: HTMLElement) {
   return { copy, scrolls };
 }
 
+/**
+ * Put an outgoing-page copy into an animation layer with the correct dimensions and scroll
+ * offsets.
+ */
 function placeSnapshot(target: HTMLElement, source: HTMLElement, incoming = false) {
   const { copy, scrolls } = snapshot(source);
   target.replaceChildren(copy);
@@ -37,6 +50,10 @@ function placeSnapshot(target: HTMLElement, source: HTMLElement, incoming = fals
   }
 }
 
+/**
+ * Own temporary animation layers and cleanup. The caller changes the real URL/content
+ * separately; this hook only makes the transition visible.
+ */
 export function usePageTurn(contentKey: string) {
   const source = useRef<HTMLDivElement>(null);
   const layers = useRef<HTMLDivElement>(null);

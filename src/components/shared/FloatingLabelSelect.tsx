@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Reusable select control with a floating label and option display. The caller supplies
+ * options and selection handlers; this component owns the control's presentation.
+ */
 import { useState } from "react";
 
 interface SelectOption {

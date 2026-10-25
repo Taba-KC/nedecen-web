@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Reusable set of mutually exclusive choices. It reports the selected value to the parent;
+ * filtering or switching content happens wherever that parent uses the value.
+ */
 interface Option {
   label: string;
   value: string;

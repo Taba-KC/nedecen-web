@@ -1,3 +1,8 @@
+/**
+ * Teacher book definitions and the class -> subject -> task page tree. The dashboard
+ * response supplies assignments; teacherPages derives sidebar nodes and numbers. Add a new
+ * book branch here and implement its page kind in TeacherBookPage.
+ */
 import type { Subject } from "../RoleDashboard";
 import type { BookPage } from "@/components/principal/books/types";
 
@@ -19,17 +24,33 @@ export type TeacherBookId = typeof TEACHER_BOOKS[number]["id"];
 
 export const className = (subject: Subject) => /^grade\s/i.test(subject.className) ? subject.className : `Grade ${subject.className}`;
 export const allocationName = (subject: Subject) => `${subject.subjectName} · ${className(subject)}`;
+/**
+ * Use the saved lessonNumber when available; the ID-based fallback supports older response
+ * data. This is not the sidebar page number.
+ */
 export function lessonName(lesson: Subject["lessons"][number], subject: Subject) {
   const number = lesson.lessonNumber ?? [...subject.lessons].sort((a, b) => a.id - b.id).findIndex(item => item.id === lesson.id) + 1;
   return `Lesson ${number}`;
 }
+/**
+ * Format a stored date for display. Formatting a label does not change the saved lesson or
+ * due time.
+ */
 export function dateLabel(value: string) {
   return new Intl.DateTimeFormat("en-ZA", { day: "numeric", month: "short", year: "numeric", timeZone: "Africa/Johannesburg" }).format(new Date(value.length === 10 ? `${value}T12:00:00+02:00` : value));
 }
+/**
+ * Get the school calendar date in South Africa, independently of the browser machine's
+ * timezone.
+ */
 export function today() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Johannesburg", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 }
 
+/**
+ * Group assignments by class, sort subjects, then build the selected book's children.
+ * Indexes produce display numbers; record IDs produce stable page IDs.
+ */
 export function teacherPages(bookId: TeacherBookId, subjects: Subject[]): TeacherPage[] {
   if (bookId === "announcements") return [{ id: "under-development", title: "Still under development", number: "1", kind: "under-development" }];
   const grouped = new Map<number, Subject[]>();
@@ -53,6 +74,9 @@ export function teacherPages(bookId: TeacherBookId, subjects: Subject[]): Teache
   });
 }
 
+/**
+ * Walk the nested teacher page objects to recover the breadcrumb path to one stable page ID.
+ */
 export function teacherPagePath(pages: TeacherPage[], pageId: string): TeacherPage[] {
   for (const page of pages) {
     if (page.id === pageId) return [page];
@@ -61,6 +85,10 @@ export function teacherPagePath(pages: TeacherPage[], pageId: string): TeacherPa
   }
   return [];
 }
+/**
+ * Flatten the tree in reading order for Previous/Next controls while retaining the same page
+ * objects and IDs.
+ */
 export function flattenTeacherPages(pages: TeacherPage[]): TeacherPage[] {
   return pages.flatMap(page => [page, ...flattenTeacherPages(page.children ?? [])]);
 }

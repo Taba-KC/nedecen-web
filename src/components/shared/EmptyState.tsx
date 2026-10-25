@@ -1,3 +1,7 @@
+/**
+ * Consistent message for a list or screen with nothing to display. Optional content/actions
+ * come from the caller so the message can explain the appropriate next step.
+ */
 interface EmptyStateProps {
   message: string;
 }

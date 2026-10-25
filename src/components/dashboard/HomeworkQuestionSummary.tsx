@@ -1,3 +1,8 @@
+/**
+ * Compact preview of one draft question: concept, question and memo each occupy a short
+ * line. View opens the full editor in the parent; Delete removes the draft item rather than
+ * calling a database endpoint here.
+ */
 import styles from "./homework.module.css";
 import book from "@/components/principal/books/books.module.css";
 

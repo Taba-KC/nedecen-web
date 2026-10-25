@@ -13,7 +13,7 @@ import styles from "./role-dashboard.module.css";
 import LessonFeedbackForm from "./LessonFeedbackForm";
 import StaffClasses, { type StaffPanel } from "./StaffClasses";
 
-type Concept = { id: number; name: string; prerequisites?: string[]; learningOutcomes?: string[]; teachingBrief?: { conceptName: string; prerequisites: string[]; learningOutcomes: string[] } | null };
+type Concept = { id: number; name: string; prerequisites?: string[]; learningOutcomes?: string[]; reviewGoals?: string[]; teachingBrief?: { conceptName: string; prerequisites: string[]; learningOutcomes: string[] } | null };
 type Chapter = { id: number; name: string; total: number; taught: number; topics: { id: number; name: string; concepts: Concept[] }[] };
 type Lesson = { id: number; lessonNumber?: number; date: string; status: string; chapterName: string; concepts: Concept[]; homework: { id: number; dueDate: string; questions: { id: number; body: string; conceptId: number; memo?: string | null }[] }[] };
 export type Subject = { id: number; subjectName: string; className: string; classId: number; gradeNumber: number; totalConcepts: number; taughtConcepts: number; currentChapter: { name: string } | null; curriculum: Chapter[]; lessons: Lesson[] };

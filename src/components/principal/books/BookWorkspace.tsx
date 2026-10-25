@@ -10,9 +10,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getSchoolId, logout } from "@/lib/auth";
+import { rememberedLibraryLocation } from "@/lib/libraryMemory";
 import { RosterImportModal } from "@/components/principal/RosterImportModal";
 import { BOOKS } from "./registry";
 import { classLabel, findPagePath, flattenPages, type BookData, type BookPage, type Command, type PageView } from "./types";
+import ResponsiveLibrary, { LibraryContents, LibraryDrawerClose, LibraryShelfTitle, WorkspaceAction } from "./ResponsiveLibrary";
 import styles from "./books.module.css";
 import { usePageTurn } from "./usePageTurn";
 
@@ -279,7 +281,9 @@ export function BookWorkspace() {
    */
   function navigate(nextBook: string, nextPage?: string, nextTab?: string) {
     if (importChanged.current) { importChanged.current = false; setRevision(value => value + 1); }
-    const search = new URLSearchParams({ book: nextBook });
+    const remembered = !nextPage ? rememberedLibraryLocation("principal", nextBook) : null;
+    const search = new URLSearchParams(remembered?.split("?")[1] ?? { book: nextBook });
+    nextPage ??= search.get("page") ?? undefined;
     if (nextPage) search.set("page", nextPage);
     if (nextTab) search.set("tab", nextTab);
     // Paint the turn immediately, before the router or the destination data finishes.
@@ -302,19 +306,20 @@ export function BookWorkspace() {
   }
 
   return <div className={styles.workspace} style={book ? { "--book-accent": book.color } as React.CSSProperties : undefined}>
-    <header className={styles.topbar}><Link href="/dashboard/principal" className={styles.brand}>NEDECEN<span>School workspace</span></Link><span className={styles.role}>Principal’s library</span><button onClick={() => { logout(); router.replace("/"); }}>Sign out <span aria-hidden="true">↗</span></button></header>
-    <div className={styles.layout}>
-      <aside className={styles.contents} aria-label="Chapters and headings"><details open><summary>Chapters &amp; Headings <span aria-hidden="true">⌄</span></summary>
-        <div className={styles.contentsIntro}>{book ? <><span className={styles.eyebrow}>Open book</span><h2>{book.title}</h2><span>{flat.length} pages</span></> : <p>No book is opened.</p>}</div>
+    <ResponsiveLibrary bookTitle={book?.title} location={`${bookId}/${page?.id ?? pageId ?? ""}`}>
+    <header data-library-topbar className={styles.topbar}><Link href="/dashboard/principal" className={styles.brand}>NEDECEN<span>School workspace</span></Link><span className={styles.role}>Principal’s library</span><button onClick={() => { logout(); router.replace("/"); }}>Sign out <span aria-hidden="true">↗</span></button></header>
+    <div data-library-layout className={styles.layout}>
+      <LibraryContents onSignOut={() => { logout(); router.replace("/"); }}><details open><summary>Chapters &amp; Headings <span aria-hidden="true">⌄</span></summary>
+        <div data-contents-intro className={styles.contentsIntro}>{book ? <><span className={styles.eyebrow}>Open book</span><h2>{book.title}</h2><span>{flat.length} pages</span></> : <p>No book is opened.</p>}</div>
         <nav aria-label="Book contents">{pages.length > 0 && <Contents pages={pages} active={page?.id} onNavigate={id => navigate(book!.id, id)} />}</nav>
-        {book && !data && !error && <p className={styles.sideNote}>Opening chapters…</p>}
-        <p className={styles.sideNote}>Choose a heading to jump to a page, or use the arrows to turn.</p>
-      </details></aside>
-      <main className={styles.binder} aria-label="Book workspace">
+        {book && !data && !error && <p data-library-note className={styles.sideNote}>Opening chapters…</p>}
+        <p data-library-note className={styles.sideNote}>Choose a heading to jump to a page, or use the arrows to turn.</p>
+      </details></LibraryContents>
+      <main data-library-workspace className={styles.binder} aria-label="Book workspace">
         <div className={styles.paper} ref={pageSurface}>
-          <div className={styles.pageToolbar}>
+          <div data-book-toolbar className={styles.pageToolbar}>
             <nav className={styles.breadcrumb} aria-label="Current book and page"><span>{book ? book.title : "Your school library"}</span>{book && breadcrumbPages.map(crumb => <span className={styles.breadcrumbPart} key={crumb.id}><span className={styles.breadcrumbDivider} aria-hidden="true">/</span>{crumb.id === page?.id ? <span aria-current="page">{crumb.title}</span> : <button type="button" onClick={() => navigate(book.id, crumb.id)}>{crumb.title}</button>}</span>)}</nav>
-            {book && <div className={styles.toolbarActions}><button type="button" onClick={() => router.push("/dashboard/principal", { scroll: false })} aria-label="Close book">Close book ×</button></div>}
+            {book && <div className={styles.toolbarActions}><WorkspaceAction icon="close" aria-label="Close book" title="Close book" onClick={() => router.push("/dashboard/principal", { scroll: false })}>Close book ×</WorkspaceAction></div>}
           </div>
           <div className={styles.pageBody}>
           <div className={styles.spine} data-page-spine aria-hidden="true"><span /><span /></div>
@@ -327,18 +332,19 @@ export function BookWorkspace() {
           </div>
           </div>
           </div>
-          <footer className={styles.pageFooter}><button disabled={!book || index <= 0} onClick={() => navigate(book!.id, flat[index - 1].id)} aria-label="Previous page"><Arrow back /><span>Previous</span></button><span aria-live="polite">{page ? <>Page <strong>{page.number}</strong><span className={styles.footerTitle}> · {page.title}</span></> : "No book opened"}</span><button disabled={!book || index < 0 || index >= flat.length - 1} onClick={() => navigate(book!.id, flat[index + 1].id)} aria-label="Next page"><span>Next</span><Arrow /></button></footer>
+          <footer data-book-pagination className={styles.pageFooter}><button disabled={!book || index <= 0} onClick={() => navigate(book!.id, flat[index - 1].id)} aria-label="Previous page"><Arrow back /><span>Previous</span></button><span aria-live="polite">{page ? <>Page <strong>{page.number}</strong><span className={styles.footerTitle}> · {page.title}</span></> : "No book opened"}</span><button disabled={!book || index < 0 || index >= flat.length - 1} onClick={() => navigate(book!.id, flat[index + 1].id)} aria-label="Next page"><span>Next</span><Arrow /></button></footer>
           <div ref={turnLayers} className={styles.turnLayers} data-page-turn-layers aria-hidden="true" inert><div className={styles.turnUnderlay} />{Array.from({ length: 6 }, (_, index) => <div className={styles.turnSheet} key={index} />)}</div>
         </div>
       </main>
-      <aside className={styles.shelf} aria-label="Bookshelf"><details open><summary>Your bookshelf <span className={styles.shelfCount}>{BOOKS.length}</span></summary><p className={styles.shelfIntro}>A book for every part of your school.</p><div className={styles.books}>{BOOKS.map(item => <div key={item.id} className={styles.bookTile}>
+      <aside data-library-shelf className={styles.shelf} aria-label="Bookshelf"><LibraryDrawerClose side="shelf" /><details open><summary><LibraryShelfTitle /> <span className={styles.shelfCount}>{BOOKS.length}</span></summary><p className={styles.shelfIntro}>A book for every part of your school.</p><div data-library-books className={styles.books}>{BOOKS.map(item => <div key={item.id} className={styles.bookTile}>
         <button className={styles.bookButton} onClick={() => navigate(item.id)} aria-label={`Open ${item.title}`} aria-pressed={book?.id === item.id}>
-          <span className={styles.cover} style={{ "--book-color": item.color } as React.CSSProperties}><span className={styles.coverNumber}>{item.mark}</span><span className={styles.coverTitle}>{item.title}</span><span className={styles.coverSeal} aria-hidden="true">N</span><span className={styles.coverBottom}>NEDECEN</span></span>
-          <span className={styles.bookTitle}>{item.title}</span>
-        </button><button className={styles.bookInfo} aria-label={`About ${item.title}`} aria-expanded={description === item.id} onClick={() => setDescription(description === item.id ? null : item.id)}>ⓘ <span>About this book</span></button>
+          <span data-book-cover className={styles.cover} style={{ "--book-color": item.color } as React.CSSProperties}><span className={styles.coverNumber}>{item.mark}</span><span data-cover-title className={styles.coverTitle}>{item.title}</span><span data-cover-seal className={styles.coverSeal} aria-hidden="true">N</span><span className={styles.coverBottom}>NEDECEN</span></span>
+          <span data-book-title className={styles.bookTitle}>{item.title}</span>
+        </button><button data-book-info className={styles.bookInfo} aria-label={`About ${item.title}`} aria-expanded={description === item.id} onClick={() => setDescription(description === item.id ? null : item.id)}>ⓘ <span>About this book</span></button>
         {description === item.id && <p className={styles.bookDescription}>{item.description}</p>}
       </div>)}</div><p className={styles.shelfFoot}>Made for the way schools work.</p></details></aside>
     </div>
     {command && <CommandDialog command={command} onClose={() => setCommand(null)} onSaved={refresh} />}
+    </ResponsiveLibrary>
   </div>;
 }

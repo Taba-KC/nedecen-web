@@ -16,7 +16,8 @@ import book from "@/components/principal/books/books.module.css";
 import styles from "./teacher-books.module.css";
 import type { LessonBrief } from "../lessonBrief";
 
-export type FeedbackConcept = { id: number; name: string; canReview: boolean; teachingBrief?: LessonBrief | null; counts: { understood: number; notUnderstood: number; responses: number; noResponse: number } };
+export type FeedbackGoal = { goalIndex: number; goal: string; yes: number; no: number; responses: number; noResponse: number };
+export type FeedbackConcept = { id: number; name: string; canReview: boolean; teachingBrief?: LessonBrief | null; counts: { understood: number; notUnderstood: number; responses: number; noResponse: number }; learningGoals?: FeedbackGoal[]; noCount?: number };
 export type LessonFeedbackSet = { id: number; lessonId: number; lessonNumber: number; lessonDate: string; createdAt: string; chapterName: string; totalLearners: number; concepts: FeedbackConcept[] };
 type Selection = { lesson: LessonFeedbackSet; concept: FeedbackConcept };
 
@@ -24,7 +25,7 @@ type Selection = { lesson: LessonFeedbackSet; concept: FeedbackConcept };
  * Show the selected concept's response counts and the action that queues it for the next
  * lesson.
  */
-function ConceptDialog({ selection, onClose, onAdded }: { selection: Selection; onClose: () => void; onAdded: () => void }) {
+function ReviewAction({ selection, onAdded }: { selection: Selection; onAdded: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -44,20 +45,21 @@ function ConceptDialog({ selection, onClose, onAdded }: { selection: Selection; 
     } catch (err) { setError(err instanceof Error ? err.message : "Could not add this concept. Please try again."); }
     finally { submitting.current = false; setBusy(false); }
   }
-  return <TeacherDialog title={concept.name} onClose={onClose} busy={busy}>
+  const focusGoals = concept.learningGoals?.filter(goal => goal.no > 0) ?? [];
+  return <div><button type="button" className={book.primary} disabled={busy || !!message || !concept.canReview} onClick={() => void add()}>{busy ? "Adding…" : message ? "Added to next lesson" : "Add related concept to next lesson"}</button>{error && <p className={book.error} role="alert">{error}</p>}{message && <><p role="status">{message}</p>{focusGoals.length > 0 && <div><p>Learning goals to focus on:</p><ul className={styles.concepts}>{focusGoals.map(goal => <li key={goal.goalIndex}>{goal.goal}</li>)}</ul></div>}</>}</div>;
+}
+
+function ConceptDialog({ selection, onClose, onAdded }: { selection: Selection; onClose: () => void; onAdded: () => void }) {
+  const { lesson, concept } = selection;
+  return <TeacherDialog title={concept.name} onClose={onClose}>
     <p>Lesson {lesson.lessonNumber} - {dateLabel(lesson.lessonDate)}</p>
-    <TeacherSection title="Understanding" count={concept.counts.responses}><ul className={`${book.rows} ${styles.spacedRows}`}>{[
-      ["I get it", concept.counts.understood], ["I don’t get it", concept.counts.notUnderstood], ["No response yet", concept.counts.noResponse],
-    ].map(([label, count]) => <li key={label}><div className={book.rowText}><strong>{label}</strong></div><span className={book.badge}>{count} {count === 1 ? "learner" : "learners"}</span></li>)}</ul></TeacherSection>
-    <p className={styles.note}>Each learner gives one response per concept for this lesson.</p>
+    <TeacherSection title="Learning goals" count={concept.learningGoals?.length ?? 0}>{concept.learningGoals?.length ? <ul className={styles.concepts}>{concept.learningGoals.map(goal => <li key={goal.goalIndex}><p>{goal.goal}</p><p>{goal.yes} Yes · {goal.no} No · {goal.noResponse} not answered</p></li>)}</ul> : <p>No learning goals were recorded for this lesson concept.</p>}</TeacherSection>
+    <p className={styles.note}>Learners answer Yes or No for each learning goal. Unanswered goals are not counted as No.</p>
     {concept.teachingBrief && <>
       <TeacherSection title="Prerequisites for understanding it">{concept.teachingBrief.prerequisites.length ? <ul className={styles.concepts}>{concept.teachingBrief.prerequisites.map((item, index) => <li key={index}>{item}</li>)}</ul> : <p>No specific prerequisites.</p>}</TeacherSection>
-      <TeacherSection title="Learning outcomes"><ul className={styles.concepts}>{concept.teachingBrief.learningOutcomes.map((item, index) => <li key={index}>{item}</li>)}</ul></TeacherSection>
     </>}
     {!concept.canReview && <p className={styles.note}>This concept is no longer active in your teaching allocation.</p>}
-    {error && <p className={book.error} role="alert">{error}</p>}
-    {message && <p role="status">{message}</p>}
-    <footer><button type="button" onClick={onClose} disabled={busy}>Close</button><button type="button" className={book.primary} disabled={busy || !!message || !concept.canReview} onClick={() => void add()}>{busy ? "Adding…" : message ? "Added to next lesson" : "Add to next lesson"}</button></footer>
+    <footer><button type="button" onClick={onClose}>Close</button><ReviewAction selection={selection} onAdded={onAdded} /></footer>
   </TeacherDialog>;
 }
 
@@ -79,12 +81,14 @@ export function LessonFeedbackFilter({ lessons, selectedId, loading, failed, onC
  * Render the selected lesson's already expanded concepts, including loading/error/empty
  * states and a detail modal.
  */
-export function LessonFeedbackContent({ lesson, onSelectConcept }: { lesson: LessonFeedbackSet; onSelectConcept: (concept: FeedbackConcept) => void }) {
+export function LessonFeedbackContent({ lesson, onSelectConcept, onAdded = () => {} }: { lesson: LessonFeedbackSet; onSelectConcept: (concept: FeedbackConcept) => void; onAdded?: () => void }) {
+  const needingReview = lesson.concepts.filter(concept => concept.learningGoals?.some(goal => goal.no > 0));
   return <>
     <TeacherSection title="Concepts" count={lesson.concepts.length}>
-      <p className={styles.note}>Least understood concepts appear first.</p>
-      {lesson.concepts.length ? <ul className={`${book.rows} ${styles.spacedRows}`}>{lesson.concepts.map(concept => <li key={concept.id}><button type="button" className={book.rowLink} onClick={() => onSelectConcept(concept)}><span className={styles.rowBody}><strong className={styles.singleLine}>{concept.name}</strong><small>{concept.counts.responses ? `${concept.counts.understood} get it · ${concept.counts.notUnderstood} don’t get it` : "No feedback yet"}</small></span><span className={book.textButton}>View</span></button></li>)}</ul> : <p className={book.empty}>No concepts are available for this lesson.</p>}
+      <p className={styles.note}>Concepts with the most learning goals marked No appear first.</p>
+      {lesson.concepts.length ? <ul className={`${book.rows} ${styles.spacedRows}`}>{lesson.concepts.map(concept => <li key={concept.id}><button type="button" className={book.rowLink} onClick={() => onSelectConcept(concept)}><span className={styles.rowBody}><strong className={styles.singleLine}>{concept.name}</strong><small>{concept.learningGoals?.some(goal => goal.responses > 0) ? `${concept.noCount ?? 0} No responses · ${concept.learningGoals.filter(goal => goal.no > 0).length} learning goals need attention` : "No learning goal feedback yet"}</small></span><span className={book.textButton}>View</span></button></li>)}</ul> : <p className={book.empty}>No concepts are available for this lesson.</p>}
     </TeacherSection>
+    <TeacherSection title="Learning goals mostly not met" count={needingReview.length}>{needingReview.length ? needingReview.map(concept => <div key={concept.id} className={styles.reviewSummary}><h3>{concept.name}</h3><ul className={styles.concepts}>{concept.learningGoals!.filter(goal => goal.no > 0).sort((a, b) => b.no - a.no || a.goalIndex - b.goalIndex).map(goal => <li key={goal.goalIndex}>{goal.goal}<br /><strong>{goal.no} of {goal.responses} responding learners marked No</strong></li>)}</ul><ReviewAction selection={{ lesson, concept }} onAdded={onAdded} /></div>) : <p className={styles.note}>No learning goals have been marked No yet.</p>}</TeacherSection>
   </>;
 }
 
@@ -92,7 +96,7 @@ export function LessonFeedbackContent({ lesson, onSelectConcept }: { lesson: Les
  * Own the recent-feedback request and selected lesson. Keep the selector, subtitle and
  * concept list based on the same selection.
  */
-export default function LessonFeedback({ subject, onAdded }: { subject: Subject; onAdded: () => void }) {
+export default function LessonFeedback({ subject, onAdded, selectedId, onSelectLesson }: { subject: Subject; onAdded: () => void; selectedId?: number | null; onSelectLesson?: (id: number) => void }) {
   const [data, setData] = useState<LessonFeedbackSet[] | null>(null);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
@@ -103,11 +107,11 @@ export default function LessonFeedback({ subject, onAdded }: { subject: Subject;
     api.get<LessonFeedbackSet[]>(`/staff/class-subjects/${subject.id}/lesson-feedback`).then(result => { if (active) { setData(result); setError(""); } }).catch(err => { if (active) setError(err instanceof Error ? err.message : "Could not load lesson feedback."); });
     return () => { active = false; };
   }, [subject, attempt]);
-  const current = data?.find(lesson => lesson.id === selectedLessonId) ?? data?.[0];
+  const current = data?.find(lesson => lesson.id === (selectedId ?? selectedLessonId)) ?? data?.[0];
   return <>
-    <TeacherPageHeading title="See lesson feedback" subtitle={current ? <>You are reviewing feedback for: <strong>Lesson {current.lessonNumber} - {dateLabel(current.lessonDate)}</strong></> : undefined} controls={<LessonFeedbackFilter lessons={data ?? []} selectedId={current?.id} loading={data === null} failed={!!error} onChange={id => { setSelectedLessonId(id); setSelection(null); }} />} />
+    <TeacherPageHeading title="See lesson feedback" subtitle={current ? <>You are reviewing feedback for: <strong>Lesson {current.lessonNumber} - {dateLabel(current.lessonDate)}</strong></> : undefined} controls={<LessonFeedbackFilter lessons={data ?? []} selectedId={current?.id} loading={data === null} failed={!!error} onChange={id => { setSelectedLessonId(id); setSelection(null); onSelectLesson?.(id); }} />} />
     <div className={styles.pageContent}>
-      {error ? <div className={book.viewError} role="alert"><span>{error}</span><button className={book.textButton} onClick={() => { setError(""); setAttempt(value => value + 1); }}>Try again</button></div> : data === null ? <p className={book.empty} role="status">Loading lesson feedback…</p> : current ? <LessonFeedbackContent lesson={current} onSelectConcept={concept => setSelection({ lesson: current, concept })} /> : <p className={book.empty}>No lessons have been confirmed for this class subject yet.</p>}
+      {error ? <div className={book.viewError} role="alert"><span>{error}</span><button className={book.textButton} onClick={() => { setError(""); setAttempt(value => value + 1); }}>Try again</button></div> : data === null ? <p className={book.empty} role="status">Loading lesson feedback…</p> : current ? <LessonFeedbackContent lesson={current} onSelectConcept={concept => setSelection({ lesson: current, concept })} onAdded={onAdded} /> : <p className={book.empty}>No lessons have been confirmed for this class subject yet.</p>}
     </div>
     {selection && <ConceptDialog key={`${selection.lesson.id}-${selection.concept.id}`} selection={selection} onClose={() => setSelection(null)} onAdded={onAdded} />}
   </>;

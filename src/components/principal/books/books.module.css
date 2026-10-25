@@ -78,7 +78,7 @@
  */
 .pageHeading { position: sticky; top: 0; z-index: 2; background: var(--paper); padding: 20px 0 16px; border-bottom: 1px solid var(--line); }
 .titleRow { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
-.titleRow h1 { flex: 0 1 auto; min-width: min(100%, 160px); margin: 0; font: 34px/1.2 Georgia,serif; letter-spacing: -.035em; overflow-wrap: anywhere; }
+.titleRow h1 { flex: 0 1 auto; min-width: min(100%, 160px); margin: 0; font: 28px/1.25 Georgia,serif; letter-spacing: -.025em; overflow-wrap: anywhere; }
 .headingControls { display: flex; flex: 1 1 auto; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: 10px 16px; max-width: 100%; }
 /**
  * Push a page/section action group to the far edge using flex layout, rather than literal
@@ -129,7 +129,7 @@
 .workspace .primary:hover { background: var(--book-accent-ink); border-color: var(--book-accent-ink); }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .tabs button { position: relative; font-size: 11px; padding: 7px 10px; border-radius: 4px; color: var(--muted); }
-.tabs button[aria-pressed=true] { background: var(--book-accent-soft); color: var(--book-accent-ink); font-weight: 600; }
+.tabs button[aria-pressed=true], .tabs button[aria-selected=true] { background: var(--book-accent-soft); color: var(--book-accent-ink); font-weight: 600; }
 .filterTools { display: flex; align-items: center; gap: 22px; min-width: 0; max-width: 100%; }
 .filterTools:empty { display: none; }
 .filterDropdown { position: relative; display: block; flex: 0 1 170px; min-width: 0; color: var(--book-accent-ink); }

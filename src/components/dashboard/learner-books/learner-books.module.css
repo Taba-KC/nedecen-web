@@ -1,0 +1,48 @@
+.content { padding-top: 24px; font-size: 13px; line-height: 1.8; }
+.subtitle { margin: 10px 0 0; font-size: 13px; line-height: 1.8; color: var(--muted); }
+.list { list-style: none; padding: 0; margin: 0; }
+.item { padding: 18px 0; min-width: 0; }
+.item h3 { margin: 0; font-size: 13px; font-weight: 600; line-height: 1.8; overflow-wrap: anywhere; }
+.conceptList { padding-left: 12px; }
+.conceptList h3, .numberedQuestion { display: grid; grid-template-columns: 1.5em minmax(0, 1fr); align-items: baseline; gap: 7px; font-weight: 400; }
+.conceptList .numberedQuestion { margin: 0; }
+.conceptNumber { min-width: 0; }
+/* Match the number column plus its gap, so details and actions start under the statement. */
+.conceptList .actions, .conceptList .context { margin-left: calc(1.5em + 7px); }
+.conceptList .actions { gap: 6px; }
+.conceptList .actions.actions button { padding-inline: 10px; }
+.actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 9px; }
+/* These are supporting actions, with a clear button boundary and regular-weight labels.
+ * The repeated class also overrides the bookshelf's bold text-link treatment on hover. */
+.actions.actions button { min-height: 40px; padding: 8px 12px; border: 1px solid var(--book-accent-border); border-radius: 4px; background: var(--paper); color: var(--book-accent-ink); font-size: 13px; font-weight: 400; line-height: 1.4; text-decoration: none; }
+.actions.actions button:hover { background: var(--book-accent-soft); font-weight: 400; text-decoration: none; }
+.context, .empty, .muted { color: var(--muted); font-size: 13px; line-height: 1.8; }
+.context { margin: 5px 0 0; overflow-wrap: anywhere; }
+.empty { margin: 16px 0; }
+.question { margin: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.details { font-size: 13px; line-height: 1.8; }
+.details dt { font-weight: 600; margin-top: 15px; }
+.details dd { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bullets { padding-left: 21px; font-size: 13px; line-height: 1.8; }
+.bullets li { margin-bottom: 12px; overflow-wrap: anywhere; }
+.goals { list-style: none; padding: 0; margin: 0; }
+.goal { padding: 17px 0; }
+.goal p { margin: 0; font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+.choices { display: flex; gap: 10px; margin-top: 10px; }
+.choice { min-width: 64px; padding: 9px 18px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; }
+.choice[aria-pressed="true"] { background: var(--book-accent); color: #fff; border-color: var(--book-accent); }
+.choice:disabled { opacity: .65; cursor: default; }
+.status { min-height: 24px; margin: 10px 0 0; font-size: 13px; }
+.answer { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.8; }
+.sectionTitle { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.sectionTitle h2 { margin: 0; font-size: 13px; font-weight: 600; }
+.sectionAction { margin-left: auto; flex-shrink: 0; }
+.browseButton { display: inline-flex; align-items: center; gap: 6px; font-weight: 400; min-height: 40px; white-space: nowrap; }
+.browseItem { padding: 10px 0; }
+.browseItem [aria-current="true"] { color: var(--book-accent-ink); background: var(--book-accent-soft); border-radius: 4px; }
+.sectionTitle span { font-size: 13px; color: var(--muted); }
+.heading { font-size: 13px; }
+.books { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.coverTitle { font-size: clamp(13px, 1.1vw, 18px); overflow-wrap: normal; }
+@media (min-width: 551px) and (max-width: 850px) { .books { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 550px) { .books { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

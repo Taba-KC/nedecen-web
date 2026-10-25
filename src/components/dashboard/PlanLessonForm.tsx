@@ -15,7 +15,7 @@ import book from "@/components/principal/books/books.module.css";
 import styles from "./role-dashboard.module.css";
 import local from "./teacher-books/teacher-books.module.css";
 
-type PlanningConcept = { id: number; name: string; topicId: number; prerequisites: string[]; learningOutcomes: string[] };
+type PlanningConcept = { id: number; name: string; topicId: number; prerequisites: string[]; learningOutcomes: string[]; reviewGoals?: string[] };
 type Planning = {
   chapter: Subject["curriculum"][number] | null;
   customConcepts: PlanningConcept[];

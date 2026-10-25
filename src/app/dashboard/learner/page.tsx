@@ -1,7 +1,7 @@
 /**
- * Entry point for /dashboard/learner. Learners currently use RoleDashboard rather than the
- * teacher bookshelf. Edit that component to change the learner screen.
+ * Learner bookshelf route. Suspense allows the client workspace to read URL search parameters.
  */
-import RoleDashboard from "@/components/dashboard/RoleDashboard";
+import { Suspense } from "react";
+import LearnerBookWorkspace from "@/components/dashboard/learner-books/LearnerBookWorkspace";
 
-export default function Page() { return <RoleDashboard role="learner" />; }
+export default function Page() { return <Suspense fallback={<p>Preparing your library…</p>}><LearnerBookWorkspace /></Suspense>; }

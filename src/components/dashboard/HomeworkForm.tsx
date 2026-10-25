@@ -28,7 +28,7 @@ function localDateTime() { const date=new Date(Date.now()+86400000);date.setMinu
  * Choose among taught lessons without homework. Keeping selection here lets the composer
  * reset when the chosen lesson changes.
  */
-export default function HomeworkForm({ subject, lessonId, onSent, mode }: { subject:Subject; lessonId:number|null; onSent:()=>void; mode?:HomeworkMode }) {
+export default function HomeworkForm({ subject, lessonId, onSent, mode, onLessonChange }: { subject:Subject; lessonId:number|null; onSent:()=>void; mode?:HomeworkMode; onLessonChange?:(id:number)=>void }) {
  const [internalMode,setInternalMode]=useState<HomeworkMode>("manual");
  const activeMode=mode??internalMode;
  /**
@@ -44,7 +44,7 @@ export default function HomeworkForm({ subject, lessonId, onSent, mode }: { subj
  return <>
   <div className={local.lessonSummary}><p>You are {activeMode==="ai"?"automatically":"manually"} creating homework for: <strong>{retained ? `${lessonName(retained, subject)} - ${dateLabel(retained.date)}` : "Selected lesson"}</strong></p><button type="button" className={book.textButton} onClick={()=>setPicking(true)}>Pick another lesson</button></div>
   <HomeworkComposer key={chosen} lessonId={chosen} onSent={onSent} mode={activeMode} onModeChange={mode===undefined?setInternalMode:undefined}/>
-  {picking&&<TeacherDialog title="Pick another lesson" onClose={()=>setPicking(false)}><ul className={`${book.rows} ${local.lessonChoices}`}>{choices.map(lesson=><li key={lesson.id}><button type="button" className={book.rowLink} aria-current={lesson.id===chosen?"true":undefined} onClick={()=>{setChosen(lesson.id);setPicking(false);}}><span><strong>{lessonName(lesson, subject)} - {dateLabel(lesson.date)}</strong><small>{lesson.chapterName}</small></span>{lesson.id===chosen?<span className={book.badge}>Selected</span>:<span aria-hidden="true">→</span>}</button></li>)}</ul></TeacherDialog>}
+  {picking&&<TeacherDialog title="Pick another lesson" onClose={()=>setPicking(false)}><ul className={`${book.rows} ${local.lessonChoices}`}>{choices.map(lesson=><li key={lesson.id}><button type="button" className={book.rowLink} aria-current={lesson.id===chosen?"true":undefined} onClick={()=>{setChosen(lesson.id);setPicking(false);onLessonChange?.(lesson.id);}}><span><strong>{lessonName(lesson, subject)} - {dateLabel(lesson.date)}</strong><small>{lesson.chapterName}</small></span>{lesson.id===chosen?<span className={book.badge}>Selected</span>:<span aria-hidden="true">→</span>}</button></li>)}</ul></TeacherDialog>}
  </>;
 }
 /**

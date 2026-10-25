@@ -69,3 +69,7 @@
 .workflow { font-size: 13px; line-height: 1.7; }
 @media (min-width: 551px) and (max-width: 850px) { .books { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 550px) { .account { margin-top: 10px; } }
+.reviewFocus { margin-top: 10px; font-size: 13px; line-height: 1.8; color: var(--muted); }
+.reviewFocus ul { margin: 6px 0 0; padding-left: 20px; }
+.reviewSummary { padding: 16px 0 24px; font-size: 13px; line-height: 1.8; }
+.reviewSummary h3 { margin: 0; font-size: 13px; font-weight: 600; }

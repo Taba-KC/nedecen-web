@@ -1,0 +1,117 @@
+/* One responsive shell surrounds the existing page markup for all bookshelf roles. */
+.frame { min-height: 100dvh; }
+/* All roles share a bottom account action, including drawers on small screens. */
+.contentsMenu { display: flex; flex-direction: column; min-height: 0; }
+.contentsBody { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.contentsBody > details:first-child > summary { padding-right: 40px; }
+.menuFooter { flex-shrink: 0; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.signOutButton { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; padding: 10px 14px; border: 1px solid var(--book-accent-border); border-radius: 4px; background: var(--book-accent-soft); color: var(--book-accent-ink); font-size: 13px; font-weight: 400; }
+.signOutButton:hover { background: var(--book-accent-hover); }
+.navigationBar, .libraryHeading, .drawerClose, .compactShelfTitle, .actionIcon { display: none; }
+.backdrop { position: fixed; inset: 0; z-index: 50; width: 100%; height: 100%; border: 0; background: #20271f55; cursor: default; }
+.backdrop[hidden] { display: none; }
+.bookName { min-width: 0; font: 20px/1.2 Georgia, serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+.navigationBar > button { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 5px; color: var(--book-accent-ink); }
+.navigationBar > button:hover { background: var(--book-accent-soft); }
+.workspaceAction { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.drawerClose { position: absolute; top: 18px; right: 18px; width: 40px; height: 40px; place-items: center; color: var(--book-accent-ink); border-radius: 4px; }
+
+/* Phones show the shelf alone until a book is selected. A book fills the remaining viewport. */
+.frame[data-library-mode="phone"] .desktopShelfTitle { display: none; }
+.frame[data-library-mode="phone"] .compactShelfTitle { display: inline; }
+.frame[data-library-mode="phone"][data-book-open="false"] { display: flex; flex-direction: column; }
+.frame[data-library-mode="phone"][data-book-open="false"] [data-library-topbar] { order: -2; flex-shrink: 0; }
+.frame[data-library-mode="phone"][data-book-open="false"] .libraryHeading { display: block; order: -1; font: 32px/1.2 Georgia, serif; margin: 0; padding: 24px 26px 10px; }
+.frame[data-library-mode="phone"][data-book-open="false"] [data-library-layout] { display: block; height: auto; min-height: 0; padding: 10px 26px 32px; }
+.frame[data-library-mode="phone"][data-book-open="false"] [data-library-contents],
+.frame[data-library-mode="phone"][data-book-open="false"] [data-library-workspace],
+.frame[data-library-mode="phone"][data-book-open="false"] [data-library-shelf] > details > summary { display: none; }
+.frame[data-library-mode="phone"][data-book-open="false"] [data-library-shelf] { display: block; overflow: visible; padding: 0; }
+.frame[data-library-mode="phone"][data-book-open="true"] { height: 100dvh; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.frame[data-library-mode="phone"][data-book-open="true"] [data-library-topbar] { display: none; }
+.frame[data-library-mode="phone"][data-book-open="true"] .navigationBar,
+.frame[data-library-mode="portrait"] .navigationBar { display: grid; grid-template-columns: 44px minmax(0,1fr) 44px; align-items: center; flex-shrink: 0; gap: 12px; min-height: calc(58px + env(safe-area-inset-top,0px)); padding: env(safe-area-inset-top, 0px) 14px 0; background: #eeefe8; border-bottom: 1px solid var(--line); }
+.frame[data-library-mode="phone"] [data-library-layout] { width: 100%; margin: 0; }
+.frame[data-library-mode="phone"][data-book-open="true"] [data-library-layout] { display: block; flex: 1; height: auto; min-height: 0; padding: 0; overflow: hidden; }
+.frame[data-library-mode="phone"][data-book-open="true"] [data-library-workspace] { width: 100%; height: 100%; min-height: 0; padding: 0; }
+.frame[data-library-mode="phone"] [data-library-workspace] [data-page-scroll],
+.frame[data-library-mode="portrait"] [data-library-workspace] [data-page-scroll] { max-height: none; }
+/* Let the paper reach both edges; keep its reading inset but omit the outer binder trim. */
+.frame[data-library-mode="phone"] [data-library-workspace] > div { --page-inset: 20px; border-inline: 0; border-radius: 0; box-shadow: none; }
+.frame[data-library-mode="phone"] [data-library-workspace]::before,
+.frame[data-library-mode="phone"] [data-library-workspace]::after,
+.frame[data-library-mode="phone"] [data-library-workspace] [data-page-spine] { display: none; }
+.frame[data-library-mode="phone"] [data-library-workspace] [data-book-toolbar] { gap: 8px; padding: 9px 16px; }
+.frame[data-library-mode="phone"] .workspaceAction { min-width: 40px; min-height: 40px; padding: 8px; }
+.frame[data-library-mode="phone"] .actionIcon { display: inline-flex; }
+.frame[data-library-mode="phone"] .actionLabel,
+.frame[data-library-mode="phone"] [data-book-pagination] > button > span { display: none; }
+.frame[data-library-mode="phone"] [data-book-pagination] > button { min-height: 40px; min-width: 40px; justify-content: center; }
+.frame[data-library-mode="phone"] [data-book-pagination] { padding: 8px 10px max(8px,env(safe-area-inset-bottom)); }
+
+/* Temporary drawers keep a visible, dimmed strip of the current page at the opposite edge. */
+.frame[data-library-mode="phone"][data-book-open="true"] [data-library-contents],
+.frame[data-library-mode="phone"][data-book-open="true"] [data-library-shelf],
+.frame[data-library-mode="portrait"] [data-library-contents],
+.frame[data-library-mode="portrait"] [data-library-shelf] { position: fixed; top: 0; bottom: 0; z-index: 60; width: min(400px,calc(100vw - 28px)); max-height: none; overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; padding: max(24px, env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom)); background: #eeefe8; visibility: hidden; transition: transform 220ms ease, visibility 220ms; }
+.frame[data-library-mode="phone"][data-book-open="true"] [data-library-contents],
+.frame[data-library-mode="portrait"] [data-library-contents] { left: 0; transform: translateX(-101%); box-shadow: 10px 0 30px #26312120; }
+.frame[data-library-mode="phone"][data-book-open="true"] [data-library-shelf],
+.frame[data-library-mode="portrait"] [data-library-shelf] { right: 0; transform: translateX(101%); box-shadow: -10px 0 30px #26312120; }
+.frame[data-drawer="contents"] [data-library-contents],
+.frame[data-drawer="shelf"] [data-library-shelf] { visibility: visible !important; transform: translateX(0) !important; }
+.frame[data-library-mode="phone"][data-book-open="true"] .drawerClose,
+.frame[data-library-mode="portrait"] .drawerClose { display: grid; }
+.frame[data-library-mode="phone"] [data-library-contents] nav { max-height: none; overflow: visible; }
+.frame[data-library-mode="phone"] [data-library-contents] summary,
+.frame[data-library-mode="portrait"] [data-library-shelf] summary { padding: 9px 42px 18px 0; }
+.frame[data-library-mode="phone"] [data-library-contents] summary > span { display: none; }
+.frame[data-library-mode="phone"] [data-library-contents] [data-contents-intro] { padding: 24px 0 18px; }
+.frame[data-library-mode="phone"] [data-library-contents] [data-contents-intro] h2 { font-size: 20px; }
+.frame[data-library-mode="phone"] [data-page-heading] h1 { font-size: 24px; }
+.frame[data-library-mode="phone"] [data-contents-intro] > span { display: block; }
+.frame[data-library-mode="phone"] [data-library-contents] [data-library-note] { display: block; }
+
+/* Retain real book covers in the phone library and in overlay shelves. */
+.frame:not([data-library-mode="desktop"]) [data-library-books] { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 28px 22px; padding: 20px 5px; }
+.frame:not([data-library-mode="desktop"]) [data-book-cover] { display: flex; width: 100%; max-width: none; aspect-ratio: .72; padding: 14px 12px 12px 16px; }
+.frame:not([data-library-mode="desktop"]) [data-library-shelf] button[aria-label^="Open "] { padding: 0; background: none; border-radius: 0; outline: none; }
+.frame:not([data-library-mode="desktop"]) [data-cover-title] { font-size: 20px; overflow-wrap: anywhere; }
+.frame:not([data-library-mode="desktop"]) [data-cover-seal] { display: grid; margin-top: auto; }
+.frame:not([data-library-mode="desktop"]) [data-book-title] { display: block; margin-top: 12px; font-size: 13px; }
+.frame:not([data-library-mode="desktop"]) [data-book-info] { font-size: 12px; padding: 6px 0; }
+.frame:not([data-library-mode="desktop"]) [data-book-info] span { display: inline; font-size: 11px; }
+.frame[data-library-mode="phone"][data-book-open="true"] [data-library-shelf] > details > summary { padding-right: 42px; }
+
+/* Portrait tablets keep the desktop paper and binder centred; both menus overlay it. */
+.frame[data-library-mode="portrait"] { height: 100dvh; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.frame[data-library-mode="portrait"] [data-library-topbar] { height: 72px; }
+.frame[data-library-mode="portrait"][data-book-open="true"] [data-library-topbar] { display: none; }
+.frame[data-library-mode="portrait"] [data-library-layout] { display: block; position: relative; flex: 1; width: 100%; height: auto; min-height: 0; padding: 0; overflow: hidden; }
+.frame[data-library-mode="portrait"] .workspaceAction { min-height: 40px; min-width: 40px; padding: 8px; }
+.frame[data-library-mode="portrait"] .actionIcon { display: inline-flex; }
+.frame[data-library-mode="portrait"] .actionLabel { display: none; }
+.frame[data-library-mode="portrait"] .backdrop { background: #20271f73; }
+/* Insets and rounded edges distinguish tablet menus from full-height screen columns. */
+.frame[data-library-mode="portrait"] [data-library-contents],
+.frame[data-library-mode="portrait"] [data-library-shelf] { top: max(16px,env(safe-area-inset-top)); bottom: max(16px,env(safe-area-inset-bottom)); border: 1px solid #d9ddcf; border-radius: 18px; box-shadow: 0 18px 55px #20271f33, 0 3px 10px #20271f1a; }
+.frame[data-library-mode="portrait"] [data-library-contents] { left: max(16px,env(safe-area-inset-left)); width: min(360px,calc(100vw - 48px)); transform: translateX(calc(-100% - max(32px,env(safe-area-inset-left)))); }
+.frame[data-library-mode="portrait"] [data-library-workspace] { position: absolute; top: 20px; bottom: 20px; left: 0; right: 0; width: min(980px,calc(100% - 64px)); margin-inline: auto; min-height: 0; padding: 0 0 6px; }
+.frame[data-library-mode="portrait"] [data-library-workspace]::before { inset: 6px -4px 3px 4px; }
+.frame[data-library-mode="portrait"] [data-library-workspace]::after { inset: 10px -7px 0 8px; }
+.frame[data-library-mode="portrait"] [data-library-workspace] > div { --page-inset: 24px; }
+.frame[data-library-mode="portrait"] [data-library-shelf] { right: max(16px,env(safe-area-inset-right)); width: min(400px,calc(100vw - 48px)); transform: translateX(calc(100% + max(32px,env(safe-area-inset-right)))); }
+.frame[data-library-mode="portrait"] .desktopShelfTitle { display: none; }
+.frame[data-library-mode="portrait"] .compactShelfTitle { display: inline; }
+.frame[data-library-mode="desktop"] [data-cover-title] { overflow-wrap: anywhere; }
+
+/* Landscape tablets retain the desktop's three columns even below its previous 850px breakpoint. */
+@media (max-width: 850px) {
+  .frame[data-library-mode="desktop"] [data-library-layout] { display: grid; grid-template-columns: 150px minmax(0,1fr) 174px; gap: 14px; padding: 24px 18px; height: calc(100dvh - 72px); min-height: 0; }
+  .frame[data-library-mode="desktop"] [data-library-shelf] { grid-column: auto; grid-row: auto; }
+  .frame[data-library-mode="desktop"] [data-library-books] { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px 14px; }
+  .frame[data-library-mode="desktop"] [data-book-cover] { max-width: none; }
+  .frame[data-library-mode="desktop"] [data-library-workspace] { min-height: 0; }
+  .frame[data-library-mode="desktop"] [data-page-scroll] { max-height: none; }
+}
+@media (prefers-reduced-motion: reduce) { .frame [data-library-contents], .frame [data-library-shelf], .frame [data-library-workspace] { transition: none !important; } }

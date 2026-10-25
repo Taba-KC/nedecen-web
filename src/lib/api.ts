@@ -50,7 +50,7 @@ function clearSession() {
  * Share one in-flight refresh request between simultaneous failures. This avoids multiple
  * components renewing the same session at once.
  */
-async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(): Promise<string | null> {
   if (typeof window === "undefined") return null;
   const refreshToken = getRefreshToken();
   if (!refreshToken) return null;

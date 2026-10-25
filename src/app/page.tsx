@@ -5,9 +5,9 @@
  * storage belong in lib/auth.ts. Successful login redirects to a dashboard chosen from the
  * returned account type and role.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { login, getRole, getRedirectPath } from "@/lib/auth";
+import { login, getRole, getResumePath, restoreSavedSession } from "@/lib/auth";
 import { useTheme } from "@/hooks/useTheme";
 
 export default function LoginPage() {
@@ -18,6 +18,17 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    void restoreSavedSession().then(path => {
+      if (!active) return;
+      if (path) router.replace(path);
+      else setCheckingSession(false);
+    }).catch(() => { if (active) setCheckingSession(false); });
+    return () => { active = false; };
+  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,7 +36,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const accountType = await login(username, password);
-      router.push(getRedirectPath(accountType, getRole()));
+      router.push(getResumePath(accountType, getRole()));
     } catch {
       setError("Incorrect username or password. Please try again.");
     } finally {
@@ -35,6 +46,8 @@ export default function LoginPage() {
 
   const usernameActive = focusedField === "username" || username !== "";
   const passwordActive = focusedField === "password" || password !== "";
+
+  if (checkingSession) return <main className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--color-background)", color: "var(--color-text)" }}><p role="status">Opening your workspace…</p></main>;
 
   return (
     <main

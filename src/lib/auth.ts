@@ -3,7 +3,8 @@
  * Reading a role here controls the interface only. The backend must verify the token and
  * permissions again for every protected request.
  */
-import { api } from "./api";
+import { api, refreshAccessToken } from "./api";
+import { rememberedLibraryLocation, resetActiveLibraryLocation, type LibraryRole } from "./libraryMemory";
 
 interface LoginResponse {
   accessToken: string;
@@ -64,6 +65,7 @@ export async function login(
  * to revoke a refresh token.
  */
 export function logout() {
+  resetActiveLibraryLocation();
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("accountType");
@@ -130,6 +132,28 @@ export function getRedirectPath(
   if (accountType === "learner") return "/dashboard/learner";
   if (role === "principal") return "/dashboard/principal";
   return "/dashboard/staff";
+}
+
+/** Resume the same account's last page on this device, falling back to its library. */
+export function getResumePath(accountType: "person" | "learner" | "manager", role: string | null): string {
+  const base = getRedirectPath(accountType, role);
+  return accountType === "manager" ? base : rememberedLibraryLocation(base.split("/")[2] as LibraryRole) ?? base;
+}
+
+/** Renew an expired session before leaving sign in. Token claims only select the interface;
+ * the API still verifies permissions for every request. A failed renewal keeps sign in visible. */
+export async function restoreSavedSession(): Promise<string | null> {
+  const account = getAccountType();
+  if (!account || !["person", "learner", "manager"].includes(account)) return null;
+  let token = localStorage.getItem("accessToken");
+  let claims = decodeToken(token ?? "");
+  if (!token || typeof claims.exp !== "number" || claims.exp * 1000 <= Date.now() + 30000) {
+    token = await refreshAccessToken();
+    if (!token) return null;
+    claims = decodeToken(token);
+  }
+  if (typeof claims.exp !== "number" || claims.exp * 1000 <= Date.now() || String(claims.accountId) !== localStorage.getItem("accountId") || claims.accountType !== account) return null;
+  return getResumePath(account, getRole());
 }
 /**
  * Use the manager endpoint and store a manager session without carrying over a previous

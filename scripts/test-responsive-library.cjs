@@ -24,6 +24,8 @@ const teacherData = { profile: { ...profile, title: 'Ms', number: 'T001' }, subj
       if (role !== 'learner') localStorage.setItem('role', role === 'principal' ? 'principal' : 'teacher');
     });
     await context.route('http://localhost:3000/**', async route => {
+        if (new URL(route.request().url()).pathname === '/staff/me/access') return route.fulfill({ json: { isPrincipal: true, canTeach: true, capabilities: ['grades','streams','staff','learners','curriculum'], schoolId: 1 } });
+        if (new URL(route.request().url()).pathname === '/learners/me/learning-setup') return route.fulfill({ json: { status: 'ready' } });
       const url = new URL(route.request().url());
       if (url.pathname.endsWith('/workspace') || url.pathname.endsWith('/dashboard')) await new Promise(resolve => setTimeout(resolve, 400));
       if (url.pathname === '/learners/me/workspace') return route.fulfill({ json: data });
@@ -90,11 +92,9 @@ const teacherData = { profile: { ...profile, title: 'Ms', number: 'T001' }, subj
       }
       await screenshot(role + '-phone-workspace');
       const close = page.getByRole('button', { name: 'Close book', exact: true });
-      if (role !== 'principal') {
-        assert.equal(await close.count(), 0);
-        assert.equal(await page.getByRole('button', { name: 'Refresh page', exact: true }).count(), 0);
-        await page.goto(`${base}/dashboard/${role}`);
-      } else { assert.equal(await close.locator('svg').isVisible(), true); await close.click(); }
+      assert.equal(await close.count(), 0);
+      assert.equal(await page.getByRole('button', { name: 'Refresh page', exact: true }).count(), 0);
+      await page.goto(`${base}/dashboard/${role}`);
       await page.getByRole('heading', { name: 'Your library', exact: true }).waitFor();
       await screenshot(role + '-phone-login');
       await page.setViewportSize({ width: 768, height: 1024 });

@@ -5,12 +5,15 @@
  * queued reviews. Checkbox state is a draft until Save. Shared guidance comes from
  * curriculum records; custom concepts belong only to this class subject.
  */
+import MobileAction from "@/components/shared/MobileAction";
+import { useModalMotion } from "@/hooks/useModalMotion";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api } from "@/lib/api";
 import type { Subject } from "./RoleDashboard";
 import TeacherSection from "./teacher-books/TeacherSection";
 import TeacherDialog from "./teacher-books/TeacherDialog";
 import ConceptRows from "./teacher-books/ConceptRows";
+import WrappingSelect from "@/components/shared/WrappingSelect";
 import book from "@/components/principal/books/books.module.css";
 import styles from "./role-dashboard.module.css";
 import local from "./teacher-books/teacher-books.module.css";
@@ -18,6 +21,7 @@ import local from "./teacher-books/teacher-books.module.css";
 type PlanningConcept = { id: number; name: string; topicId: number; prerequisites: string[]; learningOutcomes: string[]; reviewGoals?: string[] };
 type Planning = {
   chapter: Subject["curriculum"][number] | null;
+  chapters?: { id: number; name: string; topics: { id: number; name: string }[] }[];
   customConcepts: PlanningConcept[];
   reviewConcepts?: PlanningConcept[];
   planningConcepts?: PlanningConcept[];
@@ -31,8 +35,13 @@ type CustomConcept = { name: string; topicId: number };
  * Edit one class-specific concept draft. Save reports it to the parent; it is not inserted
  * into the shared curriculum.
  */
-function CustomConceptDialog({ topics, initial, onSave, onClose }: { topics: { id: number; name: string }[]; initial?: CustomConcept; onSave: (concept: CustomConcept) => void; onClose: () => void }) {
+function CustomConceptDialog({ chapters, defaultChapterId, initial, onSave, onClose: onDismiss }: { chapters: NonNullable<Planning["chapters"]>; defaultChapterId: number; initial?: CustomConcept; onSave: (concept: CustomConcept) => void; onClose: () => void }) {
+  const motion = useModalMotion(onDismiss);
+  const onClose = motion.close;
   const [error, setError] = useState("");
+  const [chapterId, setChapterId] = useState(() => chapters.find(chapter => chapter.topics.some(topic => topic.id === initial?.topicId))?.id ?? defaultChapterId);
+  const [topicId, setTopicId] = useState(initial?.topicId ?? chapters.find(chapter => chapter.id === chapterId)?.topics[0]?.id ?? 0);
+  const topics = chapters.find(chapter => chapter.id === chapterId)?.topics ?? [];
   const nameField = useRef<HTMLInputElement>(null);
   useEffect(() => { nameField.current?.focus(); }, []);
   /**
@@ -43,16 +52,17 @@ function CustomConceptDialog({ topics, initial, onSave, onClose }: { topics: { i
     event.preventDefault();
     const fields = new FormData(event.currentTarget);
     const name = String(fields.get("name") ?? "").trim();
-    const topicId = Number(fields.get("topicId"));
     if (!name || !topics.some(topic => topic.id === topicId)) { setError("Enter a concept and choose a topic."); return; }
     onSave({ name, topicId }); onClose();
   }
-  return <TeacherDialog title={initial ? "Custom concept" : "Add a concept"} onClose={onClose}><form onSubmit={save}>
+  return <TeacherDialog motion={motion} title={initial ? "Custom concept" : "Add a concept"} onClose={onClose}><form onSubmit={save}>
     <label>Concept<input ref={nameField} name="name" required maxLength={500} defaultValue={initial?.name} /></label>
-    <label>Topic<select name="topicId" defaultValue={initial?.topicId ?? topics[0]?.id}>{topics.map(topic => <option key={topic.id} value={topic.id}>{topic.name}</option>)}</select></label>
+    <WrappingSelect label="Chapter" value={String(chapterId)} options={chapters.map(chapter => ({ value: String(chapter.id), label: chapter.name }))} onChange={value => { const id = Number(value); setChapterId(id); setTopicId(chapters.find(chapter => chapter.id === id)?.topics[0]?.id ?? 0); setError(""); }} />
+    <WrappingSelect key={chapterId} label="Topic" value={String(topicId)} options={topics.map(topic => ({ value: String(topic.id), label: topic.name }))} onChange={value => { setTopicId(Number(value)); setError(""); }} placeholder="No topics in this chapter" />
+    {!topics.length && <p className={local.note}>This chapter has no topics yet. Choose another chapter or ask your curriculum manager to add a topic.</p>}
     <p className={local.note}>This concept belongs to this class subject. It does not change the shared curriculum.</p>
     {error && <p className={book.error} role="alert">{error}</p>}
-    <footer><button type="button" onClick={onClose}>Cancel</button><button type="submit" className={book.primary}>Save</button></footer>
+    <footer><button type="button" onClick={onClose}>Cancel</button><button type="submit" className={book.primary} disabled={!topics.length}>Save</button></footer>
   </form></TeacherDialog>;
 }
 
@@ -113,6 +123,8 @@ export default function PlanLessonForm({ subject, onSaved }: { subject: Subject;
   if (!data) return error ? <div className={book.viewError} role="alert"><span>{error}</span><button className={book.textButton} onClick={() => { setError(""); setAttempt(value => value + 1); }}>Try again</button></div> : <p className={book.empty} role="status">Loading lesson concepts…</p>;
   if (!data.chapter) return <p className={book.empty}>No curriculum is available for this teaching allocation yet. Your school manages this list.</p>;
   const chapter = data.chapter;
+  // Prefer the fresh, server-authorized chapter list; retain support for older responses.
+  const chapters = data.chapters ?? (subject.curriculum.length ? subject.curriculum : [chapter]);
   /**
    * Display the backend's curriculum order. Do not reinsert all previously taught concepts
    * here.
@@ -125,16 +137,16 @@ export default function PlanLessonForm({ subject, onSaved }: { subject: Subject;
   });
   return <>
     <form onSubmit={save} className={`${styles.workflowForm} ${local.compactForm}`}><fieldset disabled={busy}>
-      <TeacherSection title="Concepts" count={concepts.length + custom.length} action={<button type="button" className={book.contextButton} disabled={!chapter.topics.length || custom.length >= 20} onClick={() => setEditing("new")}>+ Add a concept</button>}>
+      <TeacherSection title="Concepts" count={concepts.length + custom.length} action={<MobileAction type="button" className={book.contextButton} disabled={!chapters.some(chapter => chapter.topics.length) || custom.length >= 20} onClick={() => setEditing("new")} icon="add" label="+ Add a concept" />}>
         <p className={local.note}>The first 10 untaught concepts, in curriculum order.{!!correctionIds.length && " Concepts added from lesson feedback are checked; uncheck any you don’t want to include."}</p>
         {concepts.length ? <ConceptRows concepts={concepts} selectedIds={selected} onToggle={toggle} /> : <p className={book.empty}>All available concepts have been taught. Add concepts to a lesson from lesson feedback when you want to revisit them.</p>}
-        {custom.length > 0 && <ul className={`${book.rows} ${local.spacedRows}`}>{custom.map((concept, index) => <li key={index}><div className={local.rowBody}><strong className={local.singleLine}>{concept.name}</strong><small className={local.rowDetail}>Custom concept</small></div><button type="button" className={book.textButton} onClick={() => setEditing(index)}>Edit concept</button><button type="button" className={book.textButton} onClick={() => setCustom(current => current.filter((_, i) => i !== index))}>Remove</button></li>)}</ul>}
+        {custom.length > 0 && <ul className={`${book.rows} ${local.spacedRows}`}>{custom.map((concept, index) => <li key={index}><div className={local.rowBody}><strong className={local.singleLine}>{concept.name}</strong><small className={local.rowDetail}>Custom concept</small></div><MobileAction type="button" className={book.textButton} onClick={() => setEditing(index)} icon="edit" label="Edit concept" /><MobileAction type="button" className={book.textButton} onClick={() => setCustom(current => current.filter((_, i) => i !== index))} icon="delete" label="Remove" /></li>)}</ul>}
       </TeacherSection>
       <hr className={local.sectionDivider} />
       <label className={local.inlineField}><span>Lesson date:</span><input type="date" required value={date} onChange={event => setDate(event.target.value)} /></label>
       {error && <p role="alert" className={styles.formError}>{error}</p>}
       <button className={styles.primaryButton} disabled={busy || (!selected.length && !custom.length)}>{busy ? "Saving…" : "Save lesson plan"}</button>
     </fieldset></form>
-    {editing !== null && <CustomConceptDialog key={editing} topics={chapter.topics} initial={typeof editing === "number" ? custom[editing] : undefined} onClose={() => setEditing(null)} onSave={concept => setCustom(current => typeof editing === "number" ? current.map((row, i) => i === editing ? concept : row) : [...current, concept])} />}
+    {editing !== null && <CustomConceptDialog key={editing} chapters={chapters} defaultChapterId={chapter.id} initial={typeof editing === "number" ? custom[editing] : undefined} onClose={() => setEditing(null)} onSave={concept => setCustom(current => typeof editing === "number" ? current.map((row, i) => i === editing ? concept : row) : [...current, concept])} />}
   </>;
 }

@@ -5,6 +5,7 @@
  * coordinates refreshes and delegates workflow details to smaller forms. Subject types here
  * also describe data used by the teacher bookshelf.
  */
+import { MotionTabs } from "@/components/shared/Motion";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
@@ -77,12 +78,12 @@ export default function RoleDashboard({ role }: { role: "staff" | "learner" }) {
   }
   return <div className={styles.shell}>
     <header className={styles.header}>
-      <a href={staff ? "/dashboard/staff" : "/dashboard/learner"} className={styles.brand}>ANELOC</a>
-      <nav className={styles.nav} aria-label={staff ? "Staff navigation" : "Learner navigation"}>
-        <button aria-current={tab === "home" ? "page" : undefined} onClick={() => openTab("home")}>Home{tasks.length > 0 && <span className={styles.badge}>{tasks.length}<span className={styles.srOnly}> waiting items</span></span>}</button>
-        <button aria-current={tab === "subjects" ? "page" : undefined} onClick={() => openTab("subjects")}>{section}</button>
-        {staff && <button aria-current={tab === "history" ? "page" : undefined} onClick={() => openTab("history")}>History</button>}
-      </nav>
+      <a href={staff ? "/dashboard/staff" : "/dashboard/learner"} className={styles.brand}>NEDECEN</a>
+      <MotionTabs active={tab} className={styles.nav} role="navigation" aria-label={staff ? "Staff navigation" : "Learner navigation"} style={{ "--motion-tab-color": "#a02331b3" } as React.CSSProperties}>
+        <button aria-pressed={tab === "home"} aria-current={tab === "home" ? "page" : undefined} onClick={() => openTab("home")}>Home{tasks.length > 0 && <span className={styles.badge}>{tasks.length}<span className={styles.srOnly}> waiting items</span></span>}</button>
+        <button aria-pressed={tab === "subjects"} aria-current={tab === "subjects" ? "page" : undefined} onClick={() => openTab("subjects")}>{section}</button>
+        {staff && <button aria-pressed={tab === "history"} aria-current={tab === "history" ? "page" : undefined} onClick={() => openTab("history")}>History</button>}
+      </MotionTabs>
       <button className={styles.signOut} onClick={() => { logout(); router.replace("/"); }}>Sign out</button>
     </header>
     <main className={styles.main + (tab !== "home" ? " " + styles.fullWidth : "")}>

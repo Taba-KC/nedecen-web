@@ -12,11 +12,11 @@ The principal, teacher and learner libraries share `src/components/principal/boo
 
 Phone drawers leave 28 pixels of the underlying screen visible at the opposite edge. Opening a book on a phone or portrait tablet automatically slides its contents into view, introducing the pages available to explore. Choosing a page closes contents and shows that page; ordinary page changes do not reopen the menu. Selecting a book from the shelf closes the shelf and introduces that book's contents, including when reopening the current book. Tablet shelves are at most 400 pixels wide. The visible background is dimmed and cannot be interacted with until the drawer closes. Tapping the dimmed area, pressing Escape or using the close button dismisses a drawer.
 
-The principal toolbar Close book control uses an icon on phones and compact tablets. Teacher and learner toolbars contain only breadcrumbs. Page-turn controls use icons on phones, and accessible names remain available to assistive technology.
+All roles' book toolbars contain breadcrumbs without a Close book control. The library icon opens the bookshelf. Page-turn controls use icons on phones, and accessible names remain available to assistive technology.
 
 On phones the paper fills the viewport width. Its outer binder trim is hidden, while inner reading padding remains. Learner concept actions use outlined buttons with regular-weight text.
 
-Workspace titles use 28px on larger screens and 24px on phones. Body text and concept sizes are unchanged.
+Workspace titles use 28px on larger screens and 24px on phones. On phones, body and concept text use a 14–15px reading scale, with 16px form inputs to avoid focus-zoom.
 
 ## Remembering where you left off
 
@@ -33,7 +33,7 @@ When registering a new book, add its ID to the role's allowlist in `libraryMemor
 - `ResponsiveLibrary.tsx` owns viewport mode, the title bar, temporary drawer state, focus trapping, background `inert`, focus restoration and scroll locking.
 - `responsive-library.module.css` owns widths, animation, dimming, paper positioning and compact action presentation. Reduced-motion preferences disable sliding transitions.
 - `BookWorkspace.tsx`, `teacher-books/TeacherBookWorkspace.tsx` and `learner-books/LearnerBookWorkspace.tsx` wrap their existing markup with the shared component. The `data-library-*` attributes identify their real contents, shelf and paper regions. They are not duplicate navigation trees.
-- `WorkspaceAction` renders a labelled desktop action with a compact icon presentation where space is limited.
+- `shared/MobileAction.tsx` gives utility actions phone-only icons with full accessible names, tooltips and 44px touch targets. Add, import, confirm and homework actions keep written labels alongside their icons. Desktop and tablet labels remain. Learner concept actions, history filters, and principal class Subjects-tab actions retain their labels; class Edit/Delete actions become icons on phones.
 - `LibraryDrawerClose` closes its corresponding panel. Only one drawer opens at a time; choosing a page dismisses contents on phones and portrait tablets.
 
 Phone mode covers widths up to 600 pixels, and compact landscape windows up to 1000 pixels wide and 500 pixels high. Tablet portrait covers portrait widths from 601 through 1200 pixels. Other viewports retain the desktop layout. These are viewport rules rather than user-agent detection, so resizing and rotation work without a reload.
@@ -57,3 +57,12 @@ node scripts/test-responsive-library.cjs
 Also run the existing principal, teacher and learner book checks, ESLint, TypeScript and the production build when modifying the shared shell.
 
 All three bookshelf roles use `LibraryContents` in `src/components/principal/books/ResponsiveLibrary.tsx`. Its shared Sign out footer stays at the bottom of the left menu on every screen size; chapters and account details scroll independently above it. Sign out uses the existing logout handler to clear the session and return to sign in.
+
+
+## Phone polish, 27 October 2026
+
+The phone workspace retains the full-width paper, book accents and temporary menus. It now uses consistent 20px reading insets, readable secondary text, 44px or larger action targets, rounded controls and predictable spacing. Principal register actions sit below their record; longer teacher concepts wrap. Learner supporting buttons remain labelled and aligned with their concept statement. Forms stack labels and controls when space is limited.
+
+Roster previews retain the desktop table but display labelled record cards on phones, using the same inputs and save logic. The curriculum manager and account setup screens have matching touch sizes and readable input text. Desktop layouts remain intact; familiar editing/deletion controls stay compact on phones.
+
+`scripts/test-mobile-polish-browser.cjs` exercises principal books, teacher planning/confirmation/homework, learner lessons/homework/syllabus, the manager editor and entry screens with isolated API fixtures at 320, 360, 390, 768 and 1600 pixels. Screenshots are saved under `.next/mobile-polish-screenshots/`. Set `MOBILE_WIDTH` to inspect one workspace width, or `MOBILE_ENTRY_ONLY=1` to check entry screens alone.

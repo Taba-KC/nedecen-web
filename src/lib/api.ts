@@ -179,6 +179,7 @@ async function request<T>(
  * TypeScript; it does not validate JSON at runtime.
  */
 export const api = {
+  put: <T>(path: string, body: unknown) => request<T>(path, { method: "PUT", body: JSON.stringify(body) }),
   post: <T>(path: string, body: unknown) =>
     request<T>(path, { method: "POST", body: JSON.stringify(body) }),
 

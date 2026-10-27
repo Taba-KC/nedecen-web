@@ -1,0 +1,45 @@
+/* One short motion vocabulary for every role. Keep saves, validation and navigation immediate. */
+:root { --motion-ease: cubic-bezier(.2,.7,.3,1); }
+@layer base {
+  :where(button, a, input, select, textarea) { transition: color 140ms, background-color 140ms, border-color 140ms, box-shadow 140ms; }
+}
+
+.motion-collapse { display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden; transition: grid-template-rows 200ms var(--motion-ease), opacity 160ms, visibility 0s 200ms, margin-bottom 200ms var(--motion-ease); }
+.motion-collapse[data-open="true"] { grid-template-rows: 1fr; opacity: 1; visibility: visible; transition-delay: 0s; }
+.motion-collapse-clip { min-height: 0; overflow: hidden; }
+
+.motion-tabs { position: relative; isolation: isolate; }
+.motion-tab-indicator { position: absolute; z-index: -1; pointer-events: none; top: 0; left: 0; width: var(--tab-width,0px); height: var(--tab-height,0px); transform: translate(var(--tab-x,0px),var(--tab-y,0px)); border-radius: 4px; background: var(--motion-tab-color,var(--book-accent-soft,var(--color-surface))); transition: transform 200ms var(--motion-ease), width 200ms var(--motion-ease), height 200ms var(--motion-ease); }
+.motion-tabs[data-tab-ready="true"] > button:is([aria-pressed="true"],[aria-selected="true"]) { background: transparent; }
+
+.motion-dialog[open] { animation: motion-modal-in 180ms var(--motion-ease) both; }
+.motion-dialog[open]::backdrop { animation: motion-backdrop-in 180ms ease both; }
+.motion-dialog[data-motion-closing] { animation: motion-modal-out 140ms ease both; pointer-events: none; }
+.motion-dialog[data-motion-closing]::backdrop { animation: motion-backdrop-out 140ms ease both; }
+@keyframes motion-modal-in { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes motion-modal-out { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(5px) scale(.99); } }
+@keyframes motion-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes motion-backdrop-out { from { opacity: 1; } to { opacity: 0; } }
+.motion-enter { animation: motion-content-in 160ms var(--motion-ease); }
+@keyframes motion-content-in { from { opacity: .35; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Native disclosures (including curriculum editors) keep browser semantics and keyboard support. */
+@supports (interpolate-size: allow-keywords) {
+  details { interpolate-size: allow-keywords; }
+  details::details-content { height: 0; opacity: 0; overflow: clip; transition: height 200ms var(--motion-ease), opacity 160ms, content-visibility 200ms allow-discrete; }
+  details[open]::details-content { height: auto; opacity: 1; }
+}
+
+.motion-sheet { position: fixed; inset: 0; margin: auto; padding: 0; border: 1px solid var(--color-border); color: var(--color-text); background: var(--color-card); width: min(512px,calc(100vw - 48px)); max-width: none; max-height: 85dvh; overflow: hidden; border-radius: 16px; box-shadow: 0 16px 48px #0003; }
+.motion-sheet[data-width="sm"] { width: min(384px,calc(100vw - 48px)); }
+.motion-sheet[data-width="xl"] { width: min(1024px,calc(100vw - 48px)); }
+.motion-sheet::backdrop { background: #0008; }
+.motion-sheet-body { display: flex; flex-direction: column; max-height: 85dvh; }
+@media(max-width:1023px) {
+  .motion-sheet { top: auto; bottom: 0; margin: 0; border-radius: 16px 16px 0 0; }
+  .motion-sheet:is([data-width="sm"],[data-width="md"],[data-width="xl"]) { width: 100%; }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  *, *::before, *::after, details::details-content { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

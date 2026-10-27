@@ -5,19 +5,23 @@
  * closes it by removing it. showModal runs after mounting; busy can block accidental
  * dismissal during a save.
  */
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, type ReactNode } from "react";
+import { lockModalScroll, useModalMotion, type ModalMotion } from "@/hooks/useModalMotion";
 import styles from "@/components/principal/books/books.module.css";
 
-export default function TeacherDialog({ title, onClose, busy = false, children }: { title: string; onClose: () => void; busy?: boolean; children: ReactNode }) {
-  const ref = useRef<HTMLDialogElement>(null);
+export default function TeacherDialog({ title, onClose, busy = false, children, motion }: { title: string; onClose: () => void; busy?: boolean; children: ReactNode; motion?: ModalMotion }) {
+  const ownMotion = useModalMotion(onClose);
+  const { ref, close } = motion ?? ownMotion;
   const titleId = useId();
   useEffect(() => {
     const dialog = ref.current;
+    if (dialog) dialog.inert = false;
     dialog?.showModal();
-    return () => { dialog?.close(); };
-  }, []);
-  return <dialog ref={ref} className={styles.dialog} aria-labelledby={titleId} onCancel={event => { event.stopPropagation(); if (busy) event.preventDefault(); else onClose(); }} onClick={event => { if (event.target === ref.current && !busy) onClose(); }}>
-    <header><h2 id={titleId}>{title}</h2><button type="button" disabled={busy} onClick={onClose} aria-label="Close dialog">×</button></header>
+    const unlock = lockModalScroll();
+    return () => { dialog?.close(); unlock(); };
+  }, [ref]);
+  return <dialog ref={ref} className={`${styles.dialog} motion-dialog`} aria-labelledby={titleId} onCancel={event => { event.stopPropagation(); event.preventDefault(); if (!busy) close(); }} onClick={event => { if (event.target === ref.current && !busy) close(); }}>
+    <header><h2 id={titleId}>{title}</h2><button type="button" disabled={busy} onClick={close} aria-label="Close dialog">×</button></header>
     {children}
   </dialog>;
 }

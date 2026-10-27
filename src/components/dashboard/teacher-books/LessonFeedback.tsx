@@ -1,10 +1,13 @@
 "use client";
 
+import AppSelect from "@/components/shared/AppSelect";
+
 /**
  * Teacher feedback for one selected confirmed lesson. Load the last ten lessons, show the
  * selected lesson's concepts, and open count details. Add to next lesson calls the server,
  * which chooses an existing upcoming plan or a queued draft.
  */
+import { useModalMotion } from "@/hooks/useModalMotion";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { dateLabel } from "./registry";
@@ -15,6 +18,7 @@ import TeacherPageHeading from "./TeacherPageHeading";
 import book from "@/components/principal/books/books.module.css";
 import styles from "./teacher-books.module.css";
 import type { LessonBrief } from "../lessonBrief";
+import { MobileActionContent } from "@/components/shared/MobileAction";
 
 export type FeedbackGoal = { goalIndex: number; goal: string; yes: number; no: number; responses: number; noResponse: number };
 export type FeedbackConcept = { id: number; name: string; canReview: boolean; teachingBrief?: LessonBrief | null; counts: { understood: number; notUnderstood: number; responses: number; noResponse: number }; learningGoals?: FeedbackGoal[]; noCount?: number };
@@ -49,9 +53,11 @@ function ReviewAction({ selection, onAdded }: { selection: Selection; onAdded: (
   return <div><button type="button" className={book.primary} disabled={busy || !!message || !concept.canReview} onClick={() => void add()}>{busy ? "Adding…" : message ? "Added to next lesson" : "Add related concept to next lesson"}</button>{error && <p className={book.error} role="alert">{error}</p>}{message && <><p role="status">{message}</p>{focusGoals.length > 0 && <div><p>Learning goals to focus on:</p><ul className={styles.concepts}>{focusGoals.map(goal => <li key={goal.goalIndex}>{goal.goal}</li>)}</ul></div>}</>}</div>;
 }
 
-function ConceptDialog({ selection, onClose, onAdded }: { selection: Selection; onClose: () => void; onAdded: () => void }) {
+function ConceptDialog({ selection, onClose: onDismiss, onAdded }: { selection: Selection; onClose: () => void; onAdded: () => void }) {
+  const motion = useModalMotion(onDismiss);
+  const onClose = motion.close;
   const { lesson, concept } = selection;
-  return <TeacherDialog title={concept.name} onClose={onClose}>
+  return <TeacherDialog motion={motion} title={concept.name} onClose={onClose}>
     <p>Lesson {lesson.lessonNumber} - {dateLabel(lesson.lessonDate)}</p>
     <TeacherSection title="Learning goals" count={concept.learningGoals?.length ?? 0}>{concept.learningGoals?.length ? <ul className={styles.concepts}>{concept.learningGoals.map(goal => <li key={goal.goalIndex}><p>{goal.goal}</p><p>{goal.yes} Yes · {goal.no} No · {goal.noResponse} not answered</p></li>)}</ul> : <p>No learning goals were recorded for this lesson concept.</p>}</TeacherSection>
     <p className={styles.note}>Learners answer Yes or No for each learning goal. Unanswered goals are not counted as No.</p>
@@ -69,11 +75,10 @@ function ConceptDialog({ selection, onClose, onAdded }: { selection: Selection; 
  */
 export function LessonFeedbackFilter({ lessons, selectedId, loading, failed, onChange }: { lessons: LessonFeedbackSet[]; selectedId?: number; loading: boolean; failed: boolean; onChange: (id: number) => void }) {
   return <label className={`${book.filterDropdown} ${styles.lessonFilter}`}><span className="sr-only">Select lesson to review</span>
-    <select value={selectedId ?? ""} disabled={loading || failed || lessons.length === 0} onChange={event => onChange(Number(event.target.value))}>
+    <AppSelect value={selectedId ?? ""} disabled={loading || failed || lessons.length === 0} onChange={event => onChange(Number(event.target.value))}>
       {!lessons.length && <option value="">{failed ? "Feedback unavailable" : loading ? "Loading lesson…" : "No confirmed lessons yet"}</option>}
       {lessons.map(lesson => <option key={lesson.id} value={lesson.id}>Lesson {lesson.lessonNumber} - {dateLabel(lesson.lessonDate)}</option>)}
-    </select>
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </AppSelect>
   </label>;
 }
 
@@ -86,7 +91,7 @@ export function LessonFeedbackContent({ lesson, onSelectConcept, onAdded = () =>
   return <>
     <TeacherSection title="Concepts" count={lesson.concepts.length}>
       <p className={styles.note}>Concepts with the most learning goals marked No appear first.</p>
-      {lesson.concepts.length ? <ul className={`${book.rows} ${styles.spacedRows}`}>{lesson.concepts.map(concept => <li key={concept.id}><button type="button" className={book.rowLink} onClick={() => onSelectConcept(concept)}><span className={styles.rowBody}><strong className={styles.singleLine}>{concept.name}</strong><small>{concept.learningGoals?.some(goal => goal.responses > 0) ? `${concept.noCount ?? 0} No responses · ${concept.learningGoals.filter(goal => goal.no > 0).length} learning goals need attention` : "No learning goal feedback yet"}</small></span><span className={book.textButton}>View</span></button></li>)}</ul> : <p className={book.empty}>No concepts are available for this lesson.</p>}
+      {lesson.concepts.length ? <ul className={`${book.rows} ${styles.spacedRows}`}>{lesson.concepts.map(concept => <li key={concept.id}><button type="button" className={book.rowLink} onClick={() => onSelectConcept(concept)}><span className={styles.rowBody}><strong className={styles.singleLine}>{concept.name}</strong><small>{concept.learningGoals?.some(goal => goal.responses > 0) ? `${concept.noCount ?? 0} No responses · ${concept.learningGoals.filter(goal => goal.no > 0).length} learning goals need attention` : "No learning goal feedback yet"}</small></span><span className={book.textButton}><MobileActionContent icon="view">View</MobileActionContent></span></button></li>)}</ul> : <p className={book.empty}>No concepts are available for this lesson.</p>}
     </TeacherSection>
     <TeacherSection title="Learning goals mostly not met" count={needingReview.length}>{needingReview.length ? needingReview.map(concept => <div key={concept.id} className={styles.reviewSummary}><h3>{concept.name}</h3><ul className={styles.concepts}>{concept.learningGoals!.filter(goal => goal.no > 0).sort((a, b) => b.no - a.no || a.goalIndex - b.goalIndex).map(goal => <li key={goal.goalIndex}>{goal.goal}<br /><strong>{goal.no} of {goal.responses} responding learners marked No</strong></li>)}</ul><ReviewAction selection={{ lesson, concept }} onAdded={onAdded} /></div>) : <p className={styles.note}>No learning goals have been marked No yet.</p>}</TeacherSection>
   </>;

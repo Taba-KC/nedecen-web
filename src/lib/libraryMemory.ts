@@ -8,14 +8,17 @@ const books: Record<LibraryRole, readonly string[]> = {
 };
 type Memory = { last?: string; books: Record<string, string> };
 
-function identity() {
+function identity(mode?:LibraryRole) {
   if (typeof window === "undefined") return null;
   const account = localStorage.getItem("accountType");
   const id = localStorage.getItem("accountId");
   const school = localStorage.getItem("schoolId");
   const role: LibraryRole | null = account === "learner" ? "learner" : account === "person" ? (localStorage.getItem("role") === "principal" ? "principal" : "staff") : null;
   if (!role || !/^\d+$/.test(id ?? "") || !/^\d+$/.test(school ?? "")) return null;
-  return { role, key: `nedecen.library.v1:${account}:${id}:${school}:${role}` };
+  const selected=mode??role;
+  if(account!=="person"&&selected!==role)return null;
+  if(account==="person"&&selected==="learner")return null;
+  return { role:selected, key: `nedecen.library.v1:${account}:${id}:${school}:${selected}` };
 }
 
 /** Rebuild a local URL from known navigation parameters. Never redirect to arbitrary saved text. */
@@ -47,7 +50,8 @@ function read(key: string): Memory {
 export function rememberLibraryLocation(value: string) {
   // Storage can be disabled or full; navigation must still work without it.
   try {
-    const user = identity();
+    const match=value.match(/^\/dashboard\/(principal|staff|learner)(?:\?|$)/);
+    const user = identity(match?.[1] as LibraryRole|undefined);
     if (!user) return;
     const location = libraryLocation(user.role, value);
     if (!location) return;
@@ -61,7 +65,7 @@ export function rememberLibraryLocation(value: string) {
 
 export function rememberedLibraryLocation(role: LibraryRole, book?: string): string | null {
   try {
-    const user = identity();
+    const user = identity(role);
     if (!user || user.role !== role) return null;
     const saved = read(user.key);
     const location = book ? saved.books[book] : saved.last;
@@ -75,6 +79,6 @@ export function rememberedLibraryLocation(role: LibraryRole, book?: string): str
 export function resetActiveLibraryLocation() {
   try {
     const user = identity();
-    if (user) rememberLibraryLocation(`/dashboard/${user.role}`);
+    if (user) for(const role of (user.role === "learner" ? ["learner"] : ["principal","staff"]) as LibraryRole[]) rememberLibraryLocation(`/dashboard/${role}`);
   } catch { /* Sign out should succeed even if storage is unavailable. */ }
 }

@@ -96,3 +96,14 @@
   .success { min-height: 360px; }
 }
 @media (prefers-reduced-motion: reduce) { .page * { transition: none !important; } }
+
+@media (max-width:600px) {
+  .intro, .card { padding:20px; border-radius:14px; }
+  .layout { gap:16px; }
+  .field label, .formHeading p { font-size:14px; }
+  .field input { font-size:16px; height:48px; }
+  .field p, .help { font-size:12px; }
+  .primary, .secondary { min-height:48px; font-size:14px; }
+  .steps li { font-size:12px; }
+  .backLink { min-height:44px; font-size:12px; }
+}

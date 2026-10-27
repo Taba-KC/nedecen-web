@@ -376,3 +376,11 @@
     background-size: 14px 14px;
   }
 }
+
+/* Phone entry forms use readable inputs without browser focus-zoom. */
+@media(max-width:600px) {
+  [data-auth-page] { --control-height:50px; --field-gap:20px; }
+  [data-auth-page] input { font-size:16px; }
+  [data-auth-page] button { min-height:44px; }
+  [data-auth-page] h2 { line-height:1.3; }
+}

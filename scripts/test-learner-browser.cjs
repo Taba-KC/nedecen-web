@@ -22,6 +22,8 @@ const feedback = [{ id: 46, lessonId: 46, lessonNumber: 2, lessonDate: '2026-10-
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   let saves = 0;
   await page.route('http://localhost:3000/**', async route => {
+        if (new URL(route.request().url()).pathname === '/staff/me/access') return route.fulfill({ json: { isPrincipal: true, canTeach: true, capabilities: ['grades','streams','staff','learners','curriculum'], schoolId: 1 } });
+        if (new URL(route.request().url()).pathname === '/learners/me/learning-setup') return route.fulfill({ json: { status: 'ready' } });
     const url = new URL(route.request().url());
     if (url.pathname === '/learners/me/workspace') return route.fulfill({ json: data });
     if (/\/lesson-concepts\/\d+\/goals$/.test(url.pathname)) {
@@ -37,7 +39,8 @@ const feedback = [{ id: 46, lessonId: 46, lessonNumber: 2, lessonDate: '2026-10-
   });
   async function open(book, kind, id = 91) {
     await page.goto(`${base}/dashboard/learner?book=${book}&page=${kind}-${id}`);
-    if (page.viewportSize().width <= 600) {
+    const viewport = page.viewportSize();
+    if (viewport.width <= 600 || (viewport.width <= 1200 && viewport.height >= viewport.width)) {
       await page.getByRole('dialog', { name: 'Chapters and headings' }).waitFor();
       await page.getByRole('button', { name: 'Close pages menu', exact: true }).click();
     }

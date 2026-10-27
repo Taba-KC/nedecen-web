@@ -23,6 +23,7 @@ for (const extension of [".ts", ".tsx"]) {
 require.extensions[".css"] = module => { module.exports = new Proxy({}, { get: (_, key) => key === "__esModule" ? false : String(key) }); };
 const { TEACHER_BOOKS, teacherPages, flattenTeacherPages, teacherPagePath, allocationName, dateLabel, lessonName } = require("../src/components/dashboard/teacher-books/registry.ts");
 const TeacherBookPage = require("../src/components/dashboard/teacher-books/TeacherBookPage.tsx").default;
+const MobileAction = require("../src/components/shared/MobileAction.tsx").default;
 const HomeworkForm = require("../src/components/dashboard/HomeworkForm.tsx").default;
 const HomeworkMethodFilters = require("../src/components/dashboard/HomeworkMethodFilters.tsx").default;
 const ManualQuestionDialog = require("../src/components/dashboard/ManualQuestionDialog.tsx").default;
@@ -88,7 +89,7 @@ const homeworkPages = teacherPages("homework", data.subjects);
 assert.deepEqual(homeworkPages[0].children[1].children.map(page => page.title), ["Create homework"]);
 const compose = flattenTeacherPages(homeworkPages).find(page => page.id === "compose-10");
 const list = TeacherBookPage(props("homework", compose));
-const create = find(list, node => node.type === "button" && node.props.children === "Create homework");
+const create = find(list, node => node.type === MobileAction && node.props.label === "Create homework");
 create.props.onClick();
 assert.deepEqual(destination, ["homework", "compose-10", 52], "Only taught lessons without homework appear in the creation list");
 const selectedPage = TeacherBookPage({ ...props("homework", compose), selectedLessonId: 52, homeworkMode: "ai" });
@@ -112,7 +113,7 @@ assert.doesNotMatch(summaryMarkup, /<textarea|<select/, "Questions stay compact 
 const actions = [];
 function collectActions(node) {
   if (!React.isValidElement(node)) return;
-  if (node.type === "button") actions.push(node);
+  if (node.type === "button" || node.type === MobileAction) actions.push(node);
   React.Children.toArray(node.props.children).forEach(collectActions);
 }
 collectActions(summary);
@@ -150,7 +151,7 @@ const feedbackSets = [
 ];
 let selectedHomework;
 const homeworkFilter = LessonFeedbackFilter({ lessons: feedbackSets, selectedId: 99, loading: false, failed: false, onChange(id) { selectedHomework = id; } });
-const selectHomework = find(homeworkFilter, node => node.type === "select");
+const selectHomework = find(homeworkFilter, node => node.type === require("../src/components/shared/AppSelect.tsx").default);
 assert.equal(selectHomework.props.value, 99);
 selectHomework.props.onChange({ target: { value: "100" } });
 assert.equal(selectedHomework, 100);

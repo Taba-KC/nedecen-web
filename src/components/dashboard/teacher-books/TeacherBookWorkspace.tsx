@@ -5,6 +5,7 @@
  * from the URL, selects a tree node, and delegates the page body. Filters live in the URL
  * too, so returning to this page restores the selected lesson and homework method.
  */
+import { Collapse } from "@/components/shared/Motion";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -99,7 +100,7 @@ export default function TeacherBookWorkspace() {
   useEffect(() => {
     if (!isLoggedIn()) { router.replace("/"); return; }
     const account = getAccountType();
-    if (account !== "person" || getRole() !== "teacher") { router.replace(account ? getRedirectPath(account, getRole()) : "/"); return; }
+    if (account !== "person" || !["teacher","principal"].includes(getRole()??"")) { router.replace(account ? getRedirectPath(account, getRole()) : "/"); return; }
     const controller = new AbortController();
     void loadDashboard(controller.signal);
     return () => { controller.abort(); };
@@ -163,7 +164,7 @@ export default function TeacherBookWorkspace() {
         <footer data-book-pagination className={styles.pageFooter}><button disabled={!book || index <= 0} onClick={() => navigate(book!.id, flat[index - 1].id)} aria-label="Previous page"><Arrow back /><span>Previous</span></button><span aria-live="polite">{page ? <>Page <strong>{page.number}</strong><span className={styles.footerTitle}> · {page.title}</span></> : "Your teaching library"}</span><button disabled={!book || index < 0 || index >= flat.length - 1} onClick={() => navigate(book!.id, flat[index + 1].id)} aria-label="Next page"><span>Next</span><Arrow /></button></footer>
         <div ref={layers} className={styles.turnLayers} data-page-turn-layers aria-hidden="true" inert><div className={styles.turnUnderlay} />{Array.from({ length: 6 }, (_, i) => <div className={styles.turnSheet} key={i} />)}</div>
       </div></main>
-      <aside data-library-shelf className={styles.shelf} aria-label="Bookshelf"><LibraryDrawerClose side="shelf" /><details open><summary><LibraryShelfTitle /> <span className={styles.shelfCount}>{TEACHER_BOOKS.length}</span></summary><p className={styles.shelfIntro}>A book for every part of your teaching.</p><div data-library-books className={`${styles.books} ${local.books}`}>{TEACHER_BOOKS.map(item => <div className={styles.bookTile} key={item.id}><button className={styles.bookButton} aria-label={`Open ${item.title}`} aria-pressed={book?.id === item.id} onClick={() => navigate(item.id)}><span data-book-cover className={styles.cover} style={{ "--book-color": item.color } as CSSProperties}><span className={styles.coverNumber}>{item.mark}</span><span data-cover-title className={styles.coverTitle}>{item.title}</span><span data-cover-seal className={styles.coverSeal} aria-hidden="true">N</span><span className={styles.coverBottom}>NEDECEN</span></span><span data-book-title className={styles.bookTitle}>{item.title}</span></button><button data-book-info className={styles.bookInfo} aria-label={`About ${item.title}`} aria-expanded={about === item.id} onClick={() => setAbout(about === item.id ? null : item.id)}>ⓘ <span>About this book</span></button>{about === item.id && <p className={styles.bookDescription}>{item.description}</p>}</div>)}</div><p className={styles.shelfFoot}>Made for the way teachers work.</p></details></aside>
+      <aside data-library-shelf className={styles.shelf} aria-label="Bookshelf"><LibraryDrawerClose side="shelf" /><details open><summary><LibraryShelfTitle /> <span className={styles.shelfCount}>{TEACHER_BOOKS.length}</span></summary><p className={styles.shelfIntro}>A book for every part of your teaching.</p><div data-library-books className={`${styles.books} ${local.books}`}>{TEACHER_BOOKS.map(item => <div className={styles.bookTile} key={item.id}><button className={styles.bookButton} aria-label={`Open ${item.title}`} aria-pressed={book?.id === item.id} onClick={() => navigate(item.id)}><span data-book-cover className={styles.cover} style={{ "--book-color": item.color } as CSSProperties}><span className={styles.coverNumber}>{item.mark}</span><span data-cover-title className={styles.coverTitle}>{item.title}</span><span data-cover-seal className={styles.coverSeal} aria-hidden="true">N</span><span className={styles.coverBottom}>NEDECEN</span></span><span data-book-title className={styles.bookTitle}>{item.title}</span></button><button data-book-info className={styles.bookInfo} aria-label={`About ${item.title}`} aria-expanded={about === item.id} onClick={() => setAbout(about === item.id ? null : item.id)}>ⓘ <span>About this book</span></button><Collapse open={about === item.id}><p className={styles.bookDescription}>{item.description}</p></Collapse></div>)}</div><p className={styles.shelfFoot}>Made for the way teachers work.</p></details></aside>
     </div>
     </ResponsiveLibrary>
   </div>;

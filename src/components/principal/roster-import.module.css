@@ -1,0 +1,19 @@
+.purpose { display:flex; align-items:center; gap:12px; min-width:0; max-width:100%; font-size:14px; white-space:nowrap; }
+.purpose > span { width:230px; min-width:0; max-width:100%; }
+@media(max-width:600px) { .purpose { width:100%; } .purpose > span { flex:1; width:auto; } }
+
+/* A spreadsheet preview becomes labelled records on phones; editing uses the same inputs. */
+@media(max-width:600px) {
+  .reviewViewport { border:0; border-radius:0; }
+  .reviewTable.reviewTable { min-width:0; width:100%; }
+  .reviewTable thead { display:none; }
+  .reviewTable tbody { display:grid; gap:12px; padding:0; }
+  .reviewTable tr { display:block; position:relative; padding:14px; border:1px solid var(--color-border); border-radius:10px; }
+  .reviewTable td { display:block; padding:0; }
+  .reviewTable td + td { margin-top:12px; }
+  .reviewTable td::before { content:attr(data-label); display:block; margin-bottom:5px; font-size:12px; color:var(--color-text-muted); }
+  .reviewTable td:first-child { padding-right:48px; font-weight:600; }
+  .reviewTable td[data-label="Action"] { position:absolute; top:8px; right:8px; margin:0; }
+  .reviewTable td[data-label="Action"]::before { display:none; }
+  .reviewTable input { font-size:16px; min-height:44px; padding:10px; border-radius:7px; }
+}

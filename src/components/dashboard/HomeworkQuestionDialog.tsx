@@ -1,20 +1,26 @@
 "use client";
 
+import AppSelect from "@/components/shared/AppSelect";
+
 /**
  * View and edit a single draft question in full. Local edits reach the parent only after
  * Save. Memo regeneration asks the backend for a replacement draft; the teacher still
  * decides whether to keep it.
  */
+import { useModalMotion } from "@/hooks/useModalMotion";
 import { useState, type FormEvent } from "react";
 import { api } from "@/lib/api";
 import TeacherDialog from "./teacher-books/TeacherDialog";
 import { readManualQuestion, type ManualQuestion } from "./manualQuestion";
 import styles from "@/components/principal/books/books.module.css";
 import local from "./homework.module.css";
+import { Collapse } from "@/components/shared/Motion";
 
-export default function HomeworkQuestionDialog({ number, question, concepts, lessonId, aiAvailable, onSave, onClose }: {
+export default function HomeworkQuestionDialog({ number, question, concepts, lessonId, aiAvailable, onSave, onClose: onDismiss }: {
   number: number; question: ManualQuestion; concepts: { id: number; name: string }[]; lessonId: number; aiAvailable: boolean; onSave: (question: ManualQuestion) => void; onClose: () => void;
 }) {
+  const motion = useModalMotion(onDismiss);
+  const onClose = motion.close;
   const [conceptId, setConceptId] = useState(question.conceptId);
   const [body, setBody] = useState(question.body);
   const [memo, setMemo] = useState(question.memo);
@@ -49,14 +55,14 @@ export default function HomeworkQuestionDialog({ number, question, concepts, les
     onSave(value); onClose();
   }
 
-  return <TeacherDialog title={`Question ${number}`} onClose={onClose} busy={busy}>
+  return <TeacherDialog motion={motion} title={`Question ${number}`} onClose={onClose} busy={busy}>
     <form onSubmit={save}><fieldset disabled={busy} className={local.dialogFields}>
-      <label>Based on<select value={conceptId} onChange={event => { setConceptId(Number(event.target.value)); setCandidate(null); }}>{concepts.map(concept => <option key={concept.id} value={concept.id}>{concept.name}</option>)}</select></label>
+      <label>Based on<AppSelect value={conceptId} onChange={event => { setConceptId(Number(event.target.value)); setCandidate(null); }}>{concepts.map(concept => <option key={concept.id} value={concept.id}>{concept.name}</option>)}</AppSelect></label>
       <label>Question<textarea required maxLength={12000} rows={5} value={body} onChange={event => { setBody(event.target.value); setCandidate(null); }} /></label>
       <label>Worked memo (optional)<textarea maxLength={24000} rows={6} value={memo} onChange={event => { setMemo(event.target.value); setCandidate(null); }} /></label>
-      {aiAvailable && <button type="button" className={styles.textButton} onClick={() => setCorrection(!correction)}>{memo ? "Flag memo as wrong" : "Generate a memo"}</button>}
-      {correction && <><label>{memo ? "What is wrong with this memo?" : "What should the worked answer cover?"}<textarea maxLength={2000} rows={3} value={note} onChange={event => setNote(event.target.value)} /></label><button type="button" className={styles.contextButton} disabled={busy || !note.trim() || !body.trim()} onClick={() => void regenerate()}>{busy ? "Generating…" : "Regenerate this memo"}</button></>}
-      {candidate !== null && <section className={local.memoComparison}><h3>Review replacement memo</h3><p>Previous memo</p><del>{memo || "No memo"}</del><p>New memo</p><div className={local.fullText}>{candidate}</div><div className={local.questionActions}><button type="button" className={styles.textButton} onClick={() => { setMemo(candidate); setCandidate(null); setCorrection(false); }}>Keep this</button><button type="button" className={styles.textButton} onClick={() => void regenerate()}>Try again</button><button type="button" className={styles.textButton} onClick={() => setCandidate(null)}>Discard</button></div></section>}
+      {aiAvailable && <button type="button" className={styles.textButton} aria-expanded={correction} onClick={() => setCorrection(!correction)}>{memo ? "Flag memo as wrong" : "Generate a memo"}</button>}
+      <Collapse open={correction}><label>{memo ? "What is wrong with this memo?" : "What should the worked answer cover?"}<textarea maxLength={2000} rows={3} value={note} onChange={event => setNote(event.target.value)} /></label><button type="button" className={styles.contextButton} disabled={!correction || busy || !note.trim() || !body.trim()} onClick={() => void regenerate()}>{busy ? "Generating…" : "Regenerate this memo"}</button></Collapse>
+      {candidate !== null && <section className={`${local.memoComparison} motion-enter`}><h3>Review replacement memo</h3><p>Previous memo</p><del>{memo || "No memo"}</del><p>New memo</p><div className={local.fullText}>{candidate}</div><div className={local.questionActions}><button type="button" className={styles.textButton} onClick={() => { setMemo(candidate); setCandidate(null); setCorrection(false); }}>Keep this</button><button type="button" className={styles.textButton} onClick={() => void regenerate()}>Try again</button><button type="button" className={styles.textButton} onClick={() => setCandidate(null)}>Discard</button></div></section>}
       {error && <p role="alert" className={styles.error}>{error}</p>}
       {busy && <p role="status">Generating a replacement memo…</p>}
       {candidate !== null && <p>Keep or discard the replacement memo before saving.</p>}

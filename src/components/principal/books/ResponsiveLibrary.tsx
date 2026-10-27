@@ -2,9 +2,11 @@
 
 /** Shared navigation around the existing book surface. Drawers reuse the real contents and shelf,
  * so colours, page numbering and navigation actions remain identical on every screen. */
-import { createContext, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import styles from "./responsive-library.module.css";
 import bookStyles from "./books.module.css";
+import { useRouter,usePathname } from "next/navigation";
+import { useStaffAccess } from "@/components/dashboard/StaffAccess";
 import { useLibraryMemory } from "@/hooks/useLibraryMemory";
 
 type Mode = "desktop" | "portrait" | "phone";
@@ -23,10 +25,6 @@ function MenuIcon() { return <svg width="24" height="24" viewBox="0 0 24 24" fil
 function BooksIcon() { return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="3" y="3" width="7" height="8" rx="1" /><rect x="14" y="3" width="7" height="8" rx="1" /><rect x="3" y="15" width="7" height="6" rx="1" /><rect x="14" y="15" width="7" height="6" rx="1" /><path d="M5.5 3v8M16.5 3v8M5.5 15v6M16.5 15v6" /></svg>; }
 function CloseIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>; }
 
-/** Use an icon in narrow workspace toolbars, retaining an accessible name and desktop label. */
-export function WorkspaceAction({ icon, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { icon: "refresh" | "close"; children: ReactNode }) {
-  return <button type="button" {...props} className={`${styles.workspaceAction} ${props.className ?? ""}`}><span className={styles.actionIcon}>{icon === "close" ? <CloseIcon /> : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5" /><path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17" /></svg>}</span><span className={styles.actionLabel}>{children}</span></button>;
-}
 export function LibraryDrawerClose({ side }: { side: Exclude<Drawer, null> }) {
   const close = useContext(CloseDrawer);
   return <button type="button" className={styles.drawerClose} onClick={() => close(side)} aria-label={side === "contents" ? "Close pages menu" : "Close library menu"}><CloseIcon /></button>;
@@ -35,10 +33,12 @@ export function LibraryShelfTitle() { return <><span className={styles.desktopSh
 
 /** Keep account access visible while the book's chapters scroll independently above it. */
 export function LibraryContents({ children, onSignOut }: { children: ReactNode; onSignOut: () => void }) {
+  const access=useStaffAccess();const router=useRouter();const path=usePathname();const administration=path.includes("/principal");
   return <aside data-library-contents className={`${bookStyles.contents} ${styles.contentsMenu}`} aria-label="Chapters and headings">
     <LibraryDrawerClose side="contents" />
     <div className={styles.contentsBody}>{children}</div>
     <footer className={styles.menuFooter}>
+      {access?.canTeach&&(access.isPrincipal||access.capabilities.length>0)&&<button type="button" className={styles.signOutButton} style={{marginBottom:10}} onClick={()=>router.push(administration?"/dashboard/staff":"/dashboard/principal")}>{administration?"Switch to teaching":"Switch to administration"} <span aria-hidden="true">⇄</span></button>}
       <button type="button" className={styles.signOutButton} onClick={onSignOut}>Sign out <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 4H4v16h5M9 12h11m-4-4 4 4-4 4" /></svg></button>
     </footer>
   </aside>;
@@ -143,7 +143,7 @@ export default function ResponsiveLibrary({ bookTitle, location, children }: { b
       <button type="button" aria-label="Open library" aria-controls={`${id}-shelf`} aria-expanded={overlay === "shelf"} onClick={() => setDrawer({ side: overlay === "shelf" ? null : "shelf", location })}><BooksIcon /></button>
     </header>
     <h1 className={styles.libraryHeading}>Your library</h1>
-    <button type="button" className={styles.backdrop} tabIndex={-1} aria-label="Dismiss navigation menu" hidden={!overlay} onClick={() => setDrawer({ side: null, location })} />
+    <button type="button" className={styles.backdrop} tabIndex={-1} aria-label="Dismiss navigation menu" data-open={!!overlay} aria-hidden={!overlay} inert={!overlay} onClick={() => setDrawer({ side: null, location })} />
     {children}
   </div></CloseDrawer.Provider>;
 }

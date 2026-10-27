@@ -85,6 +85,7 @@ export interface PageView {
  * active filter.
  */
 export interface BookContext {
+  isPrincipal?: boolean;
   schoolId: number;
   data: BookData;
   page: BookPage;

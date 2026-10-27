@@ -26,6 +26,8 @@ const feedback = lessons.map(lesson => ({ id: lesson.id, lessonId: lesson.id, le
         localStorage.setItem('role', role === 'staff' ? 'teacher' : role);
       }, { role });
       await context.route('http://localhost:3000/**', route => {
+        if (new URL(route.request().url()).pathname === '/staff/me/access') return route.fulfill({ json: { isPrincipal: true, canTeach: true, capabilities: ['grades','streams','staff','learners','curriculum'], schoolId: 1 } });
+        if (new URL(route.request().url()).pathname === '/learners/me/learning-setup') return route.fulfill({ json: { status: 'ready' } });
         const path = new URL(route.request().url()).pathname;
         let json = [];
         if (path.endsWith('/workspace') || path.endsWith('/dashboard')) json = { profile, subjects: [subject], needsYou: [], comingUp: [] };
@@ -52,7 +54,7 @@ const feedback = lessons.map(lesson => ({ id: lesson.id, lessonId: lesson.id, le
       const heading = page.locator('[data-page-heading] h1'); await heading.waitFor();
       assert.equal(await heading.evaluate(node => getComputedStyle(node).fontSize), '24px');
       if (role === 'learner') await page.getByRole('heading', { name: 'Lesson 1 - 10 Oct 2026', exact: true }).waitFor();
-      if (role === 'staff') assert.equal(await page.getByLabel('Select lesson to review').inputValue(), '45');
+      if (role === 'staff') assert.match(await page.getByRole('combobox',{name:'Select lesson to review'}).textContent(), /Lesson 1/);
       await openBook(role === 'principal' ? 'Announcements' : 'Homework');
       await openBook(role === 'principal' ? 'Grades & Classes' : 'Lessons');
       await page.waitForURL(destination);
@@ -71,10 +73,11 @@ const feedback = lessons.map(lesson => ({ id: lesson.id, lessonId: lesson.id, le
         await page.getByRole('heading', { name: 'Home Activity 1', exact: true }).waitFor();
       }
       if (role === 'staff') {
-        await page.getByLabel('Select lesson to review').selectOption('46');
+        await page.getByRole('combobox',{name:'Select lesson to review'}).click();
+        await page.getByRole('option',{name:/Lesson 2/}).click();
         await page.waitForURL(/lesson=46/);
         await openBook('Homework'); await openBook('Lessons');
-        assert.equal(await page.getByLabel('Select lesson to review').inputValue(), '46');
+        assert.match(await page.getByRole('combobox',{name:'Select lesson to review'}).textContent(), /Lesson 2/);
         await openBook('Homework');
         await page.getByRole('button', { name: 'Open pages menu', exact: true }).click();
         await page.locator('[data-library-contents]').getByRole('button', { name: /Create homework/ }).click();

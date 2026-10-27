@@ -4,7 +4,8 @@
  */
 import { Suspense } from "react";
 import TeacherBookWorkspace from "@/components/dashboard/teacher-books/TeacherBookWorkspace";
+import { StaffAccessBoundary } from "@/components/dashboard/StaffAccess";
 
 export default function Page() {
-  return <Suspense fallback={<p className="p-8">Opening your teaching library…</p>}><TeacherBookWorkspace /></Suspense>;
+  return <Suspense fallback={<p className="p-8">Opening your teaching library…</p>}><StaffAccessBoundary mode="teaching"><TeacherBookWorkspace /></StaffAccessBoundary></Suspense>;
 }

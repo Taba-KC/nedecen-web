@@ -114,7 +114,7 @@
  * text.
  */
 .rows { list-style: none; padding: 0; }
-.rows li { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 14px 0; border-bottom: 1px solid #eceee5; }
+.rows li { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 0; border-bottom: 1px solid #eceee5; }
 .rowLink { width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .rowLink:hover strong { color: var(--book-accent-ink); }
 .rows strong { display: block; font-size: 13px; font-weight: 500; }
@@ -210,3 +210,58 @@
 @media(max-width:850px) { .topbar { height: 72px; padding: 0 20px; }.role { display: none; }.layout { grid-template-columns: 160px minmax(0,1fr); height: auto; min-height: calc(100dvh - 72px); gap: 18px; }.shelf { grid-column: 1/-1; grid-row: 1; }.shelf summary { padding-bottom: 12px; }.shelfIntro,.shelfFoot { display: none; }.books { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); padding: 18px 5px 10px; gap: 18px; }.cover { max-width: 92px; }.coverTitle { font-size: 13px; }.coverSeal { display: none; }.coverBottom { margin-top: auto; }.bookTitle { font-size: 10px; }.bookInfo { margin-top: 3px; }.binder { min-height: 610px; }.pageScroll { max-height: 75dvh; }.contents { max-height: 85dvh; }.welcome { min-height: 480px; } }
 @media(max-width:550px) { .layout { display: flex; flex-direction: column; padding: 16px 12px 22px; gap: 16px; }.shelf { order: -2; overflow: visible; }.contents { order: -1; overflow: visible; max-height: none; }.contents summary { padding: 10px 4px; }.contents summary > span { display: inline; }.contents nav { max-height: 240px; overflow-y: auto; }.contentsIntro { padding: 12px 8px; }.contentsIntro h2 { font-size: 17px; }.contentsIntro .eyebrow,.contentsIntro > span:last-child,.sideNote { display: none; }.contentsList button { padding: 9px; }.books { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px 24px; }.cover { display: none; }.bookButton { padding: 10px; background: #e2e7da; border-radius: 4px; }.bookButton[aria-pressed=true] { background: var(--book-accent-soft); outline: 1px solid var(--book-accent); }.bookTitle { margin: 0; font-size: 11px; }.bookInfo { font-size: 10px; padding: 2px 4px; }.shelf summary { padding: 2px 4px 12px; }.binder { flex: 1; min-height: 580px; padding-left: 18px; }.spine { left: -10px; }.spine span { width: 21px; height: 10px; }.pageToolbar { padding: 13px 20px; }.paper { --page-inset: 22px; }.pageScroll { max-height: 70dvh; }.titleRow h1 { font-size: 29px; }.pageFooter { padding: 12px 10px; }.welcome h1 { font-size: 34px; }.welcome > .eyebrow { letter-spacing: .07em; font-size: 8px; }.welcome { min-height: 460px; }.badge { margin-left: auto; }.contextButton { padding: 7px 9px; }.headingControls { gap: 8px; }.shelf details:not([open]) .books { display: none; } }
 @media(prefers-reduced-motion:reduce) { .workspace *, .workspace *::before, .workspace *::after { animation: none !important; transition: none !important; }.turnLayers { display: none; } }
+
+/* Custom selectors keep the existing title-filter placement and book colour. */
+.filterDropdown > [data-custom-select] { width:170px; max-width:100%; }
+.filterDropdown [role="combobox"] { background:var(--book-accent-soft); color:var(--book-accent-ink); font-size:12px; }
+
+/* Phone reading scale and predictable action rows. Desktop layout remains unchanged. */
+.rowActions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+@media (max-width:600px), (max-height:500px) and (max-width:1000px) {
+  .workspace { --muted:#6c7469; }
+  .pageHeading { padding:20px 0 16px; }
+  .titleRow { gap:14px; }
+  .titleRow h1 { font-size:24px; line-height:1.3; }
+  .headingControls { gap:12px; min-width:0; }
+  .filterTools { gap:10px; flex-wrap:wrap; }
+  .filterTools:has(.search) { flex:1 1 100%; }
+  .filterDropdown, .search { flex:1 1 120px; }
+  .filterDropdown > [data-custom-select], .search input { width:100%; }
+  .search input { min-height:44px; border-radius:8px; padding:10px 12px; font-size:16px; }
+  .tabs { gap:4px; }
+  .tabs button { min-height:42px; padding:10px 12px; border-radius:8px; font-size:13px; }
+  .pageTitle { margin-top:18px; }
+  .pageTitle p, .empty { font-size:14px; line-height:1.7; }
+  .section { margin-top:26px; }
+  .sectionHeading { gap:8px; margin-bottom:12px; }
+  .sectionHeading h2 { font-size:14px; line-height:1.5; }
+  .sectionHeading > span { font-size:12px; border-radius:5px; }
+  .sectionHeading .contextActions { flex-basis:100%; justify-content:flex-start; margin:4px 0 0; }
+  .actionPair { justify-content:flex-start; gap:10px; }
+  .actionOr { display:none; }
+  .importLink { font-size:13px; min-height:44px; padding:10px 12px; border:1px solid var(--book-accent-border); border-radius:8px; text-decoration:none; }
+  .contextButton, .primary { min-height:44px; padding:10px 14px; border-radius:8px; font-size:13px; }
+  .rows strong { font-size:15px; line-height:1.6; overflow-wrap:anywhere; }
+  .rows small { font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+  .rows > li:has(> .rowText) { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; padding:10px 0; gap:10px; }
+  .rowText { min-width:0; }
+  .rowActions { grid-column:1 / -1; justify-content:flex-start; }
+  .rowActions .textButton { min-height:40px; font-size:13px; padding:8px 12px; border:1px solid var(--book-accent-border); border-radius:8px; text-decoration:none; font-weight:400; }
+  .badge { margin:0; font-size:11px; line-height:1.5; max-width:100px; background:var(--book-accent-soft); padding:5px 8px; border-radius:6px; }
+  .rowLink { min-height:48px; padding-block:4px; }
+  .breadcrumb { font-size:11px; line-height:1.7; }
+  .dialog { width:calc(100vw - 24px); max-height:90dvh; padding:20px; border-radius:16px; }
+  .dialog header { gap:12px; margin-bottom:20px; }
+  .dialog h2 { font-size:23px; }
+  .dialog header > button { display:grid; place-items:center; flex-shrink:0; min-width:40px; min-height:40px; margin:-8px -8px 0 0; border-radius:8px; }
+  .dialog p, .dialog label { font-size:14px; line-height:1.65; }
+  .dialog :is(input,textarea) { font-size:16px; border-radius:8px; padding:12px; }
+  .dialog footer { gap:10px; flex-wrap:wrap; }
+  .dialog footer > button { min-height:44px; padding:10px 16px; border-radius:8px; font-size:14px; }
+  .dialog :is(input[type=checkbox],input[type=radio]) { width:20px; height:20px; padding:0; }
+}
+
+/* Related records stay compact; a second line of actions needs more separation. */
+@media (max-width:600px), (max-height:500px) and (max-width:1000px) {
+  .rows > li:has(> .rowText):has(> .rowActions) { padding-block:18px; }
+}

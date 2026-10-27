@@ -5,7 +5,8 @@
  * nodes open planning, confirmation or homework forms. This dispatch connects registry page
  * objects to real UI.
  */
-import { useState } from "react";
+import MobileAction from "@/components/shared/MobileAction";
+import { useId, useState } from "react";
 import type { Subject } from "../RoleDashboard";
 import PlanLessonForm from "../PlanLessonForm";
 import ConfirmLessonForm from "../ConfirmLessonForm";
@@ -16,6 +17,7 @@ import LessonFeedback from "./LessonFeedback";
 import TeacherDialog from "./TeacherDialog";
 import TeacherSection from "./TeacherSection";
 import ConceptRows from "./ConceptRows";
+import { Collapse } from "@/components/shared/Motion";
 import book from "@/components/principal/books/books.module.css";
 import workflow from "../role-dashboard.module.css";
 import styles from "./teacher-books.module.css";
@@ -39,23 +41,41 @@ const Section = TeacherSection;
  */
 export function PageLinks({ pages, bookId, navigate, empty }: { pages: TeacherPage[]; bookId: TeacherBookId; navigate: Navigate; empty: string }) {
   const description = (page: TeacherPage) => page.chapter ? `${page.chapter.taught} / ${page.chapter.total} concepts taught` : page.kind === "subject" ? page.subject?.currentChapter?.name ?? "Curriculum pending" : page.kind === "plan" ? "Choose concepts and a lesson date" : page.kind === "confirm" ? "Record the concepts you taught" : page.kind === "compose" ? "Prepare questions from a taught lesson" : page.kind === "lesson-feedback" ? "Review understanding and plan corrections" : "Open this page";
-  return pages.length ? <ul className={`${book.rows} ${styles.spacedRows}`}>{pages.map(page => <li key={page.id}><div className={styles.rowBody}><strong className={styles.singleLine}>{page.title}</strong><small className={styles.rowDetail}>{description(page)}</small></div><button type="button" className={book.textButton} onClick={() => navigate(bookId, page.id)}>Open<span className="sr-only"> {page.title}</span></button></li>)}</ul> : <p className={book.empty}>{empty}</p>;
+  return pages.length ? <ul className={`${book.rows} ${styles.spacedRows}`}>{pages.map(page => <li key={page.id}><div className={styles.rowBody}><strong className={styles.singleLine}>{page.title}</strong><small className={styles.rowDetail}>{description(page)}</small></div><MobileAction icon="right" label={`Open ${page.title}`} className={book.textButton} onClick={() => navigate(bookId, page.id)}>Open</MobileAction></li>)}</ul> : <p className={book.empty}>{empty}</p>;
 }
 
 /**
- * List planned lessons, allow a full plan preview, and offer confirmation only when the date
- * permits it.
+ * Expand plans in place so concepts sit beneath their lesson. Guidance opens from those
+ * concepts; the confirmation dialog focuses on selecting what was taught.
  */
 function ConfirmTaughtLessons({ subject, selectedLessonId, navigate, refresh }: { subject: Subject; selectedLessonId: number | null; navigate: Navigate; refresh: () => void }) {
-  const [viewing, setViewing] = useState<Subject["lessons"][number] | null>(null);
+  const [expanded, setExpanded] = useState<number[]>([]);
   const [selected, setSelected] = useState<Subject["lessons"][number] | null>(() => subject.lessons.find(lesson => lesson.id === selectedLessonId && lesson.status === "planned" && lesson.date <= today()) ?? null);
   const [confirming, setConfirming] = useState(false);
+  const prefix = useId();
   const planned = subject.lessons.filter(lesson => lesson.status === "planned").toSorted((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
   return <>
     <p className={styles.contextLine}>You are confirming lessons for: <strong>{allocationName(subject)}</strong></p>
-    <Section title="Lessons to confirm" count={planned.length}>{planned.length ? <ul className={`${book.rows} ${styles.spacedRows}`}>{planned.map(lesson => <li key={lesson.id}><div className={styles.rowBody}><strong>{lessonName(lesson, subject)} - {dateLabel(lesson.date)}</strong><small>{lesson.chapterName} · {lesson.concepts.length} concepts</small></div><div className={styles.pageActions}><button type="button" className={book.textButton} onClick={() => setViewing(lesson)}>View plan</button>{lesson.date <= today() ? <button className={book.textButton} onClick={() => setSelected(lesson)}>Confirm taught lesson</button> : <span className={book.badge}>Available on {dateLabel(lesson.date)}</span>}</div></li>)}</ul> : <p className={book.empty}>No lesson plans are waiting for confirmation. Plan the next lesson to get started.</p>}</Section>
-    {viewing && <TeacherDialog title={`${lessonName(viewing, subject)} - ${dateLabel(viewing.date)}`} onClose={() => setViewing(null)}><TeacherSection title="Concepts" count={viewing.concepts.length}><ConceptRows concepts={viewing.concepts} /></TeacherSection><footer><button type="button" className={book.primary} onClick={() => setViewing(null)}>Close</button></footer></TeacherDialog>}
-    {selected && <TeacherDialog title="Confirm taught lesson" onClose={() => setSelected(null)} busy={confirming}><p>{allocationName(subject)} · {dateLabel(selected.date)}</p><div className={workflow.paperWorkflows}><ConfirmLessonForm key={selected.id} lesson={selected} onConfirmed={refresh} onBusyChange={setConfirming} onHomework={() => navigate("homework", `compose-${subject.id}`, selected.id)} /></div></TeacherDialog>}
+    <Section title="Lessons to confirm" count={planned.length}>{planned.length ? <ul className={`${book.rows} ${styles.spacedRows} ${styles.plannedLessons}`}>{planned.map(lesson => {
+      const open = expanded.includes(lesson.id);
+      const title = `${lessonName(lesson, subject)} - ${dateLabel(lesson.date)}`;
+      const conceptsId = `${prefix}-concepts-${lesson.id}`;
+      return <li key={lesson.id}>
+        <div className={styles.lessonHeading}>
+          <div className={styles.rowBody}><h3><button type="button" className={styles.lessonToggle} aria-expanded={open} aria-controls={conceptsId} onClick={() => setExpanded(current => open ? current.filter(id => id !== lesson.id) : [...current, lesson.id])}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg><span>{title}</span></button></h3><small>{lesson.concepts.length} {lesson.concepts.length === 1 ? "concept" : "concepts"}</small></div>
+        </div>
+        <Collapse open={open} id={conceptsId} className={styles.lessonConcepts} role="region" aria-label={`${title} concepts`}>
+          {lesson.concepts.length ? <ConceptRows concepts={lesson.concepts} /> : <p className={styles.note}>No concepts were added to this lesson.</p>}
+        </Collapse>
+        <div className={`${styles.pageActions} ${styles.lessonConfirmation}`}>
+          {lesson.date <= today() ? <MobileAction type="button" className={book.textButton} onClick={() => setSelected(lesson)} icon="confirm" label="Confirm taught lesson" /> : <span className={book.badge}>Available on {dateLabel(lesson.date)}</span>}
+        </div>
+      </li>;
+    })}</ul> : <p className={book.empty}>No lesson plans are waiting for confirmation. Plan the next lesson to get started.</p>}</Section>
+    {selected && <TeacherDialog title="Confirm taught lesson" onClose={() => setSelected(null)} busy={confirming}>
+        <p>{allocationName(subject)} · {dateLabel(selected.date)}</p>
+        <div className={workflow.paperWorkflows}><ConfirmLessonForm key={selected.id} lesson={selected} subject={subject} onConfirmed={refresh} onBusyChange={setConfirming} onHomework={() => navigate("homework", `compose-${subject.id}`, selected.id)} /></div>
+    </TeacherDialog>}
   </>;
 }
 
@@ -78,7 +98,7 @@ export default function TeacherBookPage({ bookId, page, navigate, refresh, selec
     const eligible = subject.lessons.filter(lesson => lesson.status === "confirmed" && !lesson.homework.length && lesson.concepts.length > 0);
     const selected = subject.lessons.find(lesson => lesson.id === selectedLessonId && lesson.status === "confirmed" && lesson.concepts.length > 0);
     return <>
-      {selected ? <div className={formClass}><HomeworkForm key={selected.id} subject={subject} lessonId={selected.id} onSent={refresh} mode={homeworkMode} onLessonChange={id => navigate("homework", page.id, id)} /></div> : <Section title="Taught lessons ready for homework" count={eligible.length}>{eligible.length ? <ul className={`${book.rows} ${styles.spacedRows}`}>{eligible.map(lesson => <li key={lesson.id}><div className={styles.rowBody}><strong>{lessonName(lesson, subject)} - {dateLabel(lesson.date)}</strong><small>{lesson.chapterName} · {lesson.concepts.length} taught concepts</small></div><button className={book.textButton} onClick={() => navigate("homework", page.id, lesson.id)}>Create homework</button></li>)}</ul> : <p className={book.empty}>No taught lessons are waiting for homework. Confirm a lesson with taught concepts first.</p>}</Section>}
+      {selected ? <div className={formClass}><HomeworkForm key={selected.id} subject={subject} lessonId={selected.id} onSent={refresh} mode={homeworkMode} onLessonChange={id => navigate("homework", page.id, id)} /></div> : <Section title="Taught lessons ready for homework" count={eligible.length}>{eligible.length ? <ul className={`${book.rows} ${styles.spacedRows}`}>{eligible.map(lesson => <li key={lesson.id}><div className={styles.rowBody}><strong>{lessonName(lesson, subject)} - {dateLabel(lesson.date)}</strong><small>{lesson.chapterName} · {lesson.concepts.length} taught concepts</small></div><MobileAction className={book.textButton} onClick={() => navigate("homework", page.id, lesson.id)} icon="homework" label="Create homework" /></li>)}</ul> : <p className={book.empty}>No taught lessons are waiting for homework. Confirm a lesson with taught concepts first.</p>}</Section>}
     </>;
   }
   if (page.kind === "chapter" && page.chapter) return <>

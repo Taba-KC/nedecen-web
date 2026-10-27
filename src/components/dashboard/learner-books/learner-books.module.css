@@ -23,9 +23,9 @@
 .details { font-size: 13px; line-height: 1.8; }
 .details dt { font-weight: 600; margin-top: 15px; }
 .details dd { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.bullets { padding-left: 21px; font-size: 13px; line-height: 1.8; }
-.bullets li { margin-bottom: 12px; overflow-wrap: anywhere; }
-.goals { list-style: none; padding: 0; margin: 0; }
+.bullets { list-style: disc outside; padding-left: 21px; font-size: 13px; line-height: 1.8; }
+.bullets li { margin-bottom: 6px; overflow-wrap: anywhere; }
+.goals { list-style: disc outside; padding: 0 0 0 21px; margin: 0; }
 .goal { padding: 17px 0; }
 .goal p { margin: 0; font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
 .choices { display: flex; gap: 10px; margin-top: 10px; }
@@ -46,3 +46,22 @@
 .coverTitle { font-size: clamp(13px, 1.1vw, 18px); overflow-wrap: normal; }
 @media (min-width: 551px) and (max-width: 850px) { .books { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 550px) { .books { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+@media (max-width:600px), (max-height:500px) and (max-width:1000px) {
+  .content { padding-top:20px; font-size:15px; line-height:1.7; }
+  .subtitle, .context, .empty, .muted, .details, .bullets, .answer { font-size:14px; line-height:1.7; }
+  .item { padding:20px 0; }
+  .item h3, .numberedQuestion { font-size:15px; line-height:1.7; }
+  .conceptList { padding-left:4px; }
+  .actions { margin-top:12px; gap:8px; }
+  .conceptList .actions { gap:8px; }
+  .actions.actions button, .conceptList .actions.actions button { min-height:44px; padding:10px 12px; border-radius:8px; font-size:13px; }
+  .sectionTitle { gap:10px; padding:12px 0; align-items:center; flex-wrap:wrap; }
+  .sectionTitle h2 { font-size:14px; line-height:1.6; }
+  .browseButton { min-height:44px; border:1px solid var(--book-accent-border); border-radius:8px; padding:8px 12px; font-size:13px; }
+  .goal { padding:16px 0; }
+  .goal p { font-size:15px; line-height:1.65; }
+  .choice { min-height:44px; min-width:76px; border-radius:8px; font-size:14px; }
+  .choices { gap:10px; }
+  .status { font-size:13px; }
+}

@@ -51,6 +51,7 @@ export default function LoginPage() {
 
   return (
     <main
+      data-auth-page
       className="min-h-screen lg:flex"
       style={{ backgroundColor: "var(--color-background)" }}
     >

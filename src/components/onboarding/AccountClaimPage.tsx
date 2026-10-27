@@ -5,6 +5,7 @@
  * credentials to claim it. Lookup results are temporary form state; claiming performs the
  * backend write.
  */
+import { MotionPanel } from "@/components/shared/Motion";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { lookupLearner, lookupStaff, claimLearnerAccount, claimStaffAccount, type PersonName } from "@/lib/onboarding";
@@ -69,7 +70,7 @@ export function AccountClaimPage({ kind }: { kind: "staff" | "learner" }) {
   return <main className={styles.page}>
     <div className={styles.shell}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand} aria-label="ANELOC sign in">ANELOC</Link>
+        <Link href="/" className={styles.brand} aria-label="NEDECEN sign in">NEDECEN</Link>
         <Link href="/" className={styles.backLink}>← Back to sign in</Link>
       </header>
       <div className={styles.layout}>
@@ -86,7 +87,7 @@ export function AccountClaimPage({ kind }: { kind: "staff" | "learner" }) {
           </div>
           <p className={styles.introFooter}>South African schools · CAPS aligned</p>
         </aside>
-        <section className={styles.card} aria-label={isStaff ? "Claim staff account" : "Claim learner account"}>
+        <section className={styles.card} aria-label={isStaff ? "Claim staff account" : "Claim learner account"}><MotionPanel changeKey={`${step}/${success}`}>
           {success ? <div className={styles.success}>
             <span className={styles.successIcon} aria-hidden="true">✓</span>
             <span className={styles.eyebrow}>You’re all set</span>
@@ -124,7 +125,7 @@ export function AccountClaimPage({ kind }: { kind: "staff" | "learner" }) {
             </form>}
             <p className={styles.help}>Can’t find your account? Ask your school administrator to check your registration details.</p>
           </>}
-        </section>
+        </MotionPanel></section>
       </div>
     </div>
   </main>;

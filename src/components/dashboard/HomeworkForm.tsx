@@ -1,9 +1,12 @@
 "use client";
+
+import AppSelect from "@/components/shared/AppSelect";
 /**
  * Select a confirmed lesson and compose its homework. Draft questions, due time and
  * memo-release choices stay in browser state until Send. Only the final homework request
  * writes the set and its questions to the database.
  */
+import MobileAction from "@/components/shared/MobileAction";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { Subject } from "./RoleDashboard";
@@ -17,6 +20,7 @@ import { lessonName, dateLabel } from "./teacher-books/registry";
 import book from "@/components/principal/books/books.module.css";
 import local from "./homework.module.css";
 import TeacherSection from "./teacher-books/TeacherSection";
+import { Collapse, MotionPanel } from "@/components/shared/Motion";
 type Context = { concepts:{id:number;name:string}[]; existingHomeworkId:number|null; aiAvailable:boolean; chapterName:string };
 type Question = { key:string; conceptId:number; body:string; memo:string };
 /**
@@ -85,16 +89,16 @@ function HomeworkComposer({ lessonId,onSent,mode,onModeChange }:{lessonId:number
  if(context.existingHomeworkId)return <p className={styles.empty}>This lesson already has homework.</p>;
  const viewed=draft.find(question=>question.key===viewedQuestion);
  const total=Object.values(counts).reduce((sum,count)=>sum+count,0);
- return <><form className={styles.workflowForm} onSubmit={send}><fieldset disabled={busy}>
+ return <><MotionPanel changeKey={mode}><form className={styles.workflowForm} onSubmit={send}><fieldset disabled={busy}>
   {onModeChange&&<HomeworkMethodFilters mode={mode} onChange={onModeChange}/>}
-  {mode==="ai"&&<TeacherSection title="Questions per concept" count={total} action={context.aiAvailable&&<button type="button" className={book.contextButton} disabled={busy||total<1||total>30||draft.length+total>50} onClick={generate}>{busy?"Generating…":"Generate questions & memos"}</button>}>
-    {context.aiAvailable?<>{context.concepts.map(concept=><label className={styles.questionCount} key={concept.id}><span className={local.singleLine} title={concept.name}>{concept.name}</span><input type="number" min={0} max={10} step={1} value={counts[concept.id]??0} onChange={event=>setCounts(current=>({...current,[concept.id]:Math.max(0,Math.min(10,Number(event.target.value)))}))}/></label>)}<p className={styles.muted}>Maximum 30 questions per generation. Review questions and worked memos before sending.</p></>:<p className={styles.muted}>Automatic generation is not available yet. You can write questions manually.</p>}
-  </TeacherSection>}
-  <section><div className={local.questionsHeading}><h3>Questions</h3><button type="button" className={book.contextButton} disabled={!context.concepts.length||draft.length>=50} onClick={()=>setQuestionDialogOpen(true)}>+ Add a question</button></div>{!draft.length&&<p className={styles.muted}>Homework questions will show up here. Add your first question, or generate a draft above.</p>}{draft.map((question,index)=><HomeworkQuestionSummary key={question.key} number={index+1} concept={context.concepts.find(concept=>concept.id===question.conceptId)?.name??"Concept unavailable"} body={question.body} memo={question.memo} onView={()=>setViewedQuestion(question.key)} onDelete={()=>setDraft(current=>current.filter(item=>item.key!==question.key))}/>)}</section>
+  <Collapse open={mode==="ai"}><TeacherSection title="Questions per concept" count={total} action={context.aiAvailable&&<button type="button" className={book.contextButton} disabled={busy||total<1||total>30||draft.length+total>50} onClick={generate}>{busy?"Generating…":"Generate questions & memos"}</button>}>
+    {context.aiAvailable?<>{context.concepts.map(concept=><label className={styles.questionCount} key={concept.id}><span className={local.singleLine} title={concept.name}>{concept.name}</span><input type="number" disabled={mode!=="ai"} min={0} max={10} step={1} value={counts[concept.id]??0} onChange={event=>setCounts(current=>({...current,[concept.id]:Math.max(0,Math.min(10,Number(event.target.value)))}))}/></label>)}<p className={styles.muted}>Maximum 30 questions per generation. Review questions and worked memos before sending.</p></>:<p className={styles.muted}>Automatic generation is not available yet. You can write questions manually.</p>}
+  </TeacherSection></Collapse>
+  <section><div className={local.questionsHeading}><h3>Questions</h3><MobileAction type="button" className={book.contextButton} disabled={!context.concepts.length||draft.length>=50} onClick={()=>setQuestionDialogOpen(true)} icon="add" label="+ Add a question" /></div>{!draft.length&&<p className={styles.muted}>Homework questions will show up here. Add your first question, or generate a draft above.</p>}{draft.map((question,index)=><HomeworkQuestionSummary key={question.key} number={index+1} concept={context.concepts.find(concept=>concept.id===question.conceptId)?.name??"Concept unavailable"} body={question.body} memo={question.memo} onView={()=>setViewedQuestion(question.key)} onDelete={()=>setDraft(current=>current.filter(item=>item.key!==question.key))}/>)}</section>
   <hr className={local.sectionDivider}/>
   <label className={local.inlineField}><span>Due date and time:</span><input type="datetime-local" required value={dueDate} onChange={event=>setDueDate(event.target.value)}/></label>
-  <label className={local.inlineField}><span>Memo release:</span><select value={release} onChange={event=>setRelease(event.target.value)}><option value="immediately">Immediately</option><option value="at_due_date">At due date</option><option value="custom">Custom time</option></select></label>
-  {release==="custom"&&<label className={local.inlineField}><span>Release memos at:</span><input type="datetime-local" required value={releaseAt} onChange={event=>setReleaseAt(event.target.value)}/></label>}
+  <label className={local.inlineField}><span>Memo release:</span><AppSelect value={release} onChange={event=>setRelease(event.target.value)}><option value="immediately">Immediately</option><option value="at_due_date">At due date</option><option value="custom">Custom time</option></AppSelect></label>
+  <Collapse open={release==="custom"}><label className={local.inlineField}><span>Release memos at:</span><input type="datetime-local" required={release==="custom"} disabled={release!=="custom"} value={releaseAt} onChange={event=>setReleaseAt(event.target.value)}/></label></Collapse>
   {error&&<p className={styles.formError} role="alert">{error}</p>}{busy&&<p role="status" className={styles.muted}>Working… Your draft is being kept here.</p>}<button className={styles.primaryButton} disabled={busy||!draft.length||draft.some(question=>!question.body.trim())}>{busy?"Please wait…":"Send homework to class"}</button>
- </fieldset></form>{questionDialogOpen&&<ManualQuestionDialog concepts={context.concepts} onClose={()=>setQuestionDialogOpen(false)} onSave={question=>setDraft(current=>[...current,{...question,key:crypto.randomUUID(),}])}/>}{viewed&&<HomeworkQuestionDialog key={viewed.key} number={draft.indexOf(viewed)+1} question={viewed} concepts={context.concepts} lessonId={lessonId} aiAvailable={context.aiAvailable} onSave={question=>edit(viewed.key,question)} onClose={()=>setViewedQuestion(null)}/>}</>;
+ </fieldset></form></MotionPanel>{questionDialogOpen&&<ManualQuestionDialog concepts={context.concepts} onClose={()=>setQuestionDialogOpen(false)} onSave={question=>setDraft(current=>[...current,{...question,key:crypto.randomUUID(),}])}/>}{viewed&&<HomeworkQuestionDialog key={viewed.key} number={draft.indexOf(viewed)+1} question={viewed} concepts={context.concepts} lessonId={lessonId} aiAvailable={context.aiAvailable} onSave={question=>edit(viewed.key,question)} onClose={()=>setViewedQuestion(null)}/>}</>;
 }

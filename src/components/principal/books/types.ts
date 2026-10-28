@@ -50,6 +50,7 @@ export interface Command {
   fields?: Field[];
   confirm?: string;
   content?: ReactNode;
+  renderContent?: (controls: { onSaved: () => Promise<void>; onClose: () => void; setBusy: (busy: boolean) => void }) => ReactNode;
   run?: (values: Record<string, string>, formData: FormData) => Promise<string | void>;
 }
 /**

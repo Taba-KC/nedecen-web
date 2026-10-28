@@ -4,6 +4,7 @@
  * so colours, page numbering and navigation actions remain identical on every screen. */
 import { createContext, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import styles from "./responsive-library.module.css";
+import LibraryTutorial from "./LibraryTutorial";
 import bookStyles from "./books.module.css";
 import { useRouter,usePathname } from "next/navigation";
 import { useStaffAccess } from "@/components/dashboard/StaffAccess";
@@ -19,6 +20,7 @@ function subscribeMode(changed: () => void) {
   queries.forEach(query => query.addEventListener("change", changed));
   return () => queries.forEach(query => query.removeEventListener("change", changed));
 }
+const NavigationHelp = createContext<() => void>(() => {});
 const CloseDrawer = createContext<(side: Exclude<Drawer, null>) => void>(() => {});
 
 function MenuIcon() { return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true"><path d="M3 5h18M3 12h12M3 19h6" /></svg>; }
@@ -33,11 +35,13 @@ export function LibraryShelfTitle() { return <><span className={styles.desktopSh
 
 /** Keep account access visible while the book's chapters scroll independently above it. */
 export function LibraryContents({ children, onSignOut }: { children: ReactNode; onSignOut: () => void }) {
+  const showHelp = useContext(NavigationHelp);
   const access=useStaffAccess();const router=useRouter();const path=usePathname();const administration=path.includes("/principal");
   return <aside data-library-contents className={`${bookStyles.contents} ${styles.contentsMenu}`} aria-label="Chapters and headings">
     <LibraryDrawerClose side="contents" />
     <div className={styles.contentsBody}>{children}</div>
     <footer className={styles.menuFooter}>
+      <button type="button" className={styles.signOutButton} style={{marginBottom:10}} onClick={showHelp}>Navigation help <span aria-hidden="true">?</span></button>
       {access?.canTeach&&(access.isPrincipal||access.capabilities.length>0)&&<button type="button" className={styles.signOutButton} style={{marginBottom:10}} onClick={()=>router.push(administration?"/dashboard/staff":"/dashboard/principal")}>{administration?"Switch to teaching":"Switch to administration"} <span aria-hidden="true">⇄</span></button>}
       <button type="button" className={styles.signOutButton} onClick={onSignOut}>Sign out <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 4H4v16h5M9 12h11m-4-4 4 4-4 4" /></svg></button>
     </footer>
@@ -48,6 +52,8 @@ export default function ResponsiveLibrary({ bookTitle, location, children }: { b
   useLibraryMemory();
   const mode = useSyncExternalStore(subscribeMode, currentMode, () => "desktop" as Mode);
   const [drawerState, setDrawer] = useState<{ side: Drawer; location: string; introBook?: string }>({ side: null, location });
+  const [helpRequest, setHelpRequest] = useState(0);
+  const [tutorialStep, setTutorialStep] = useState<number | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLElement>(null);
   const lastBook = useRef<string | undefined>(undefined);
@@ -62,7 +68,7 @@ export default function ResponsiveLibrary({ bookTitle, location, children }: { b
     // Hydration initially uses the desktop snapshot. Wait for the actual viewport before
     // recording this book; ordinary page changes and rotation should not reopen contents.
     if (mode !== currentMode() || lastBook.current === bookTitle) return;
-    if (mode === "desktop" || !bookTitle) { lastBook.current = bookTitle; return; }
+    if (tutorialStep !== null || mode === "desktop" || !bookTitle) { lastBook.current = bookTitle; return; }
     let reveal = 0;
     const paint = requestAnimationFrame(() => {
       reveal = requestAnimationFrame(() => {
@@ -71,7 +77,7 @@ export default function ResponsiveLibrary({ bookTitle, location, children }: { b
       });
     });
     return () => { cancelAnimationFrame(paint); cancelAnimationFrame(reveal); };
-  }, [bookTitle, mode]);
+  }, [bookTitle, mode, tutorialStep]);
 
   // History/orientation changes dismiss temporary menus on both phones and portrait tablets.
   useEffect(() => {
@@ -101,7 +107,7 @@ export default function ResponsiveLibrary({ bookTitle, location, children }: { b
     }
     for (const aside of [contents, shelf]) {
       if (!aside) continue;
-      if (aside === active) { aside.setAttribute("role", "dialog"); aside.setAttribute("aria-modal", "true"); const details = aside.querySelector("details"); if (details) details.open = true; }
+      if (aside === active) { aside.setAttribute("role", "dialog"); if (tutorialStep === null) aside.setAttribute("aria-modal", "true"); else aside.removeAttribute("aria-modal"); const details = aside.querySelector("details"); if (details) details.open = true; }
       else { aside.removeAttribute("role"); aside.removeAttribute("aria-modal"); }
     }
     if (!active) return;
@@ -113,7 +119,7 @@ export default function ResponsiveLibrary({ bookTitle, location, children }: { b
     const focusFrame = requestAnimationFrame(() => focusable()[0]?.focus({ preventScroll: true }));
     const trap = (event: KeyboardEvent) => {
       if (event.key === "Escape") { event.preventDefault(); setDrawer({ side: null, location }); return; }
-      if (event.key !== "Tab") return;
+      if (event.key !== "Tab" || tutorialStep !== null) return;
       const items = focusable(), first = items[0], last = items.at(-1);
       if (!first || !last) return;
       if (event.shiftKey && (document.activeElement === first || !active.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
@@ -126,9 +132,9 @@ export default function ResponsiveLibrary({ bookTitle, location, children }: { b
       regions.forEach(([node]) => { if (node) node.inert = false; });
       if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     };
-  }, [mode, overlay, bookOpen, id, location]);
+  }, [mode, overlay, bookOpen, id, location, tutorialStep]);
 
-  return <CloseDrawer.Provider value={close}><div ref={root} className={styles.frame} data-library-mode={mode} data-book-open={bookOpen} data-drawer={overlay ?? "none"} onClickCapture={event => {
+  return <NavigationHelp.Provider value={() => setHelpRequest(current => current + 1)}><CloseDrawer.Provider value={close}><div ref={root} className={styles.frame} data-tutorial-step={tutorialStep ?? "none"} data-library-mode={mode} data-book-open={bookOpen} data-drawer={overlay ?? "none"} onClickCapture={event => {
     const target = event.target instanceof Element ? event.target : null;
     const selectedBook = target?.closest<HTMLButtonElement>('[data-library-shelf] button[aria-label^="Open "]');
     if (selectedBook) {
@@ -145,5 +151,6 @@ export default function ResponsiveLibrary({ bookTitle, location, children }: { b
     <h1 className={styles.libraryHeading}>Your library</h1>
     <button type="button" className={styles.backdrop} tabIndex={-1} aria-label="Dismiss navigation menu" data-open={!!overlay} aria-hidden={!overlay} inert={!overlay} onClick={() => setDrawer({ side: null, location })} />
     {children}
-  </div></CloseDrawer.Provider>;
+    <LibraryTutorial request={helpRequest} compact={mode !== "desktop"} bookOpen={bookOpen} openMenu={side => setDrawer({ side, location })} closeMenu={close} stepChanged={setTutorialStep} />
+  </div></CloseDrawer.Provider></NavigationHelp.Provider>;
 }

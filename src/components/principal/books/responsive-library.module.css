@@ -125,3 +125,11 @@
 .frame[data-library-mode="phone"] .signOutButton { border-radius:8px; min-height:46px; font-size:14px; }
 .frame[data-library-mode="phone"] [data-library-topbar] { height:76px; padding:16px 20px; }
 .frame[data-library-mode="phone"] [data-library-topbar] > span { display:none; }
+
+/* Keep the library self-explanatory even when a first-time visitor skips the tour. */
+.frame [data-library-shelf] p[class*="shelfIntro"] { display:block; font-size:13px; line-height:1.6; }
+.frame[data-tutorial-step="0"] [data-library-books],
+.frame[data-tutorial-step="2"] [data-library-books],
+.frame[data-tutorial-step="1"] [data-library-contents] nav { outline:2px solid var(--book-accent); outline-offset:4px; border-radius:6px; }
+.frame:not([data-tutorial-step="none"]) [data-library-shelf],
+.frame:not([data-tutorial-step="none"]) [data-library-contents] { padding-bottom:320px; }

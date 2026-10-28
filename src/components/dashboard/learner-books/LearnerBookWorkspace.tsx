@@ -13,7 +13,6 @@ import { LEARNER_BOOKS, flattenLearnerPages, learnerPages, learnerPagePath, lear
 import LearnerBookPage from "./LearnerBookPage";
 import learnerStyles from "./learner-books.module.css";
 import ResponsiveLibrary, { LibraryContents, LibraryDrawerClose, LibraryShelfTitle } from "@/components/principal/books/ResponsiveLibrary";
-import { Collapse } from "@/components/shared/Motion";
 import styles from "@/components/principal/books/books.module.css";
 import local from "../teacher-books/teacher-books.module.css";
 
@@ -43,7 +42,6 @@ export default function LearnerBookWorkspace() {
   const book = LEARNER_BOOKS.find(item => item.id === params.get("book"));
   const [data, setData] = useState<LearnerWorkspaceData | null>(null);
   const [error, setError] = useState("");
-  const [about, setAbout] = useState<string | null>(null);
   const requestId = useRef(0);
   /**
    * Rebuild navigation from loaded assignments. Page numbers can change when ordering changes;
@@ -169,7 +167,7 @@ export default function LearnerBookWorkspace() {
         <footer data-book-pagination className={styles.pageFooter}><button disabled={!book || index <= 0} onClick={() => navigate(book!.id, flat[index - 1].id)} aria-label="Previous page"><Arrow back /><span>Previous</span></button><span aria-live="polite">{page ? <>Page <strong>{page.number}</strong><span className={styles.footerTitle}> · {page.title}</span></> : "Your learning library"}</span><button disabled={!book || index < 0 || index >= flat.length - 1} onClick={() => navigate(book!.id, flat[index + 1].id)} aria-label="Next page"><span>Next</span><Arrow /></button></footer>
         <div ref={layers} className={styles.turnLayers} data-page-turn-layers aria-hidden="true" inert><div className={styles.turnUnderlay} />{Array.from({ length: 6 }, (_, i) => <div className={styles.turnSheet} key={i} />)}</div>
       </div></main>
-      <aside data-library-shelf className={styles.shelf} aria-label="Bookshelf"><LibraryDrawerClose side="shelf" /><details open><summary><LibraryShelfTitle /> <span className={styles.shelfCount}>{LEARNER_BOOKS.length}</span></summary><p className={styles.shelfIntro}>A book for every part of your learning.</p><div data-library-books className={`${styles.books} ${learnerStyles.books}`}>{LEARNER_BOOKS.map(item => <div className={styles.bookTile} key={item.id}><button className={styles.bookButton} aria-label={`Open ${item.title}`} aria-pressed={book?.id === item.id} onClick={() => navigate(item.id)}><span data-book-cover className={styles.cover} style={{ "--book-color": item.color } as CSSProperties}><span className={styles.coverNumber}>{item.mark}</span><span data-cover-title className={`${styles.coverTitle} ${learnerStyles.coverTitle}`}>{item.title}</span><span data-cover-seal className={styles.coverSeal} aria-hidden="true">N</span><span className={styles.coverBottom}>NEDECEN</span></span><span data-book-title className={styles.bookTitle}>{item.title}</span></button><button data-book-info className={styles.bookInfo} aria-label={`About ${item.title}`} aria-expanded={about === item.id} onClick={() => setAbout(about === item.id ? null : item.id)}>ⓘ <span>About this book</span></button><Collapse open={about === item.id}><p className={styles.bookDescription}>{item.description}</p></Collapse></div>)}</div><p className={styles.shelfFoot}>Learn. Practise. Grow.</p></details></aside>
+      <aside data-library-shelf className={styles.shelf} aria-label="Bookshelf"><LibraryDrawerClose side="shelf" /><details open><summary><LibraryShelfTitle /> <span className={styles.shelfCount}>{LEARNER_BOOKS.length}</span></summary><p className={styles.shelfIntro}>Your work is organised into books. Open a book to get started.</p><div data-library-books className={`${styles.books} ${learnerStyles.books}`}>{LEARNER_BOOKS.map(item => <div className={styles.bookTile} key={item.id}><button className={styles.bookButton} aria-label={`Open ${item.title}`} aria-pressed={book?.id === item.id} onClick={() => navigate(item.id)}><span data-book-cover className={styles.cover} style={{ "--book-color": item.color } as CSSProperties}><span className={styles.coverNumber}>{item.mark}</span><span data-cover-title className={`${styles.coverTitle} ${learnerStyles.coverTitle}`}>{item.title}</span><span data-cover-seal className={styles.coverSeal} aria-hidden="true">N</span><span className={styles.coverBottom}>NEDECEN</span></span><span data-book-title className={styles.bookTitle}>{item.title}</span></button><p className={styles.bookDescription}>{item.description}</p></div>)}</div><p className={styles.shelfFoot}>Learn. Practise. Grow.</p></details></aside>
     </div>
     </ResponsiveLibrary>
   </div>;

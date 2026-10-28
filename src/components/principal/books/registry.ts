@@ -1,3 +1,4 @@
+import MoveLearners from "../MoveLearners";
 /**
  * The principal's book catalogue and feature definitions. Each book loads API data, turns it
  * into a page tree, then supplies rows/actions for the selected page. To add a book,
@@ -136,10 +137,13 @@ export const BOOKS: BookDefinition[] = [
           : { text: "To manage subjects in this class, click the Subjects tab." },
         description: manager ? `Class manager: ${nameOf(manager)}` : "No class manager assigned. Use Edit class to choose one.",
         titleActions: [{ ...classCommand(schoolId, data, grade, entity), variant: "filled" },
-          { ...remove(classLabel(entity), `${base(schoolId)}/grades/${grade.id}/classes/${entity.id}`, "This deletes the class and its learners, lessons, homework, feedback and teaching setup."), label: "Delete class", variant: "outline" }],
+          { ...remove(classLabel(entity), `${base(schoolId)}/grades/${grade.id}/classes/${entity.id}`, "Only an unused class without learners or recorded history can be deleted. Classes with history must be retained."), label: "Delete class", variant: "outline" }],
         tabs: [{ id: "learners", label: "Learners" }, { id: "subjects", label: "Subjects" }],
         sections: [{ title: subjectsSelected ? "Subjects & teachers" : "Class register", empty: subjectsSelected ? "Assign one or more streams to bring subjects into this master class." : "Your class register is empty. Choose Add learner or Bulk import learners to get started.",
-          actions: subjectsSelected ? [assignStream] : [{ ...personCommand(schoolId, "learners", data.classes, String(entity.id)), alternative: { label: "Bulk import learners", pageId: `import-${entity.id}` } }],
+          actions: subjectsSelected ? [assignStream] : [{ ...personCommand(schoolId, "learners", data.classes, String(entity.id)), alternative: { label: "Bulk import learners", pageId: `import-${entity.id}` } }, ...(items.length ? [{ label: "Move learners", title: `Move learners from ${classLabel(entity)}`, variant: "outline" as const, renderContent: (controls: { onSaved: () => Promise<void>; onClose: () => void; setBusy: (busy: boolean) => void }) => createElement(MoveLearners, {
+            schoolId, classId: entity.id, sourceName: classLabel(entity), learners: items.map(row=>({id:row.id,firstName:String(row.firstName),surname:String(row.surname),admissionNumber:String(row.admissionNumber)})),
+            destinations: data.classes.filter(row=>row.id!==entity.id&&row.gradeId===entity.gradeId&&row.academicYear===entity.academicYear).map(row=>({id:row.id,label:classLabel(row)})), ...controls,
+          }) }] : [])],
           rows: items.map(item => ({ id: String(item.id), title: subjectsSelected ? String(item.subjectName) : learnerName(item),
             detail: subjectsSelected ? nameOf(data.people.find(person => person.id === item.personId) ?? { id: 0 }) || "No teacher assigned" : [item.admissionNumber,item.selectedStreamName].filter(Boolean).join(" · "),
             badge: subjectsSelected ? undefined : item.accountSetUp ? "Account active" : "Setup pending",

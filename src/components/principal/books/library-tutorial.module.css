@@ -1,0 +1,7 @@
+.coach { position:fixed; z-index:90; bottom:20px; left:50%; transform:translateX(-50%); width:min(420px,calc(100vw - 24px)); max-height:45dvh; overflow:auto; padding:20px; background:var(--paper,#fffef9); color:var(--ink,#30352f); border:1px solid var(--book-accent-border,#d6d9ce); border-radius:16px; box-shadow:0 10px 40px #0003; font-size:14px; line-height:1.6; }
+.coach h2 { margin:4px 0 8px; font:22px/1.3 Georgia,serif; }
+.step, .hint { color:var(--book-accent-ink); font-size:12px; }
+.coach footer { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:14px; }
+.coach button { min-height:44px; }
+.preference { display:flex; align-items:center; gap:10px; margin-top:16px; font-size:13px; }
+.preference input { width:18px; height:18px; accent-color:var(--book-accent); }

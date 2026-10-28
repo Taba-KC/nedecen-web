@@ -22,7 +22,7 @@ import MobileAction, { actionIconFor } from "@/components/shared/MobileAction";
 import styles from "./books.module.css";
 import { usePageTurn } from "./usePageTurn";
 import { lockModalScroll, useModalMotion } from "@/hooks/useModalMotion";
-import { Collapse, MotionPanel, MotionTabs } from "@/components/shared/Motion";
+import { MotionPanel, MotionTabs } from "@/components/shared/Motion";
 
 /**
  * Draw a small navigation icon. back changes its direction; this function does not perform
@@ -78,6 +78,7 @@ function CommandDialog({ command, onClose: onDismiss, onSaved }: { command: Comm
    */
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (command.renderContent) return;
     if (submitting.current) return;
     const formData = new FormData(event.currentTarget);
     const values = Object.fromEntries(Array.from(formData.entries()).filter(([, value]) => typeof value === "string")) as Record<string, string>;
@@ -95,6 +96,7 @@ function CommandDialog({ command, onClose: onDismiss, onSaved }: { command: Comm
       <header><h2 id="book-dialog-title">{command.title ?? command.label}</h2><button type="button" onClick={onClose} disabled={busy} aria-label="Close dialog">×</button></header>
       {command.confirm && <p>{command.confirm}</p>}
       {command.content}
+      {command.renderContent?.({ onSaved: () => onSaved(), onClose, setBusy })}
       {(command.fields ?? []).map(field => <label key={field.name}>{field.label}
         {field.type === "subjects" ? <AppSelect multiple name={field.name} required={field.required} disabled={busy} size={8}>{field.options?.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</AppSelect>
           : field.type === "select" ? <AppSelect name={field.name} defaultValue={field.value ?? ""} required={field.required} disabled={busy} onChange={event => setSelection(current => ({ ...current, [field.name]: event.target.value }))}><option value="">Choose an option</option>{field.options?.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</AppSelect>
@@ -217,7 +219,6 @@ export function BookWorkspace() {
   const [revision, setRevision] = useState(0);
   const [query, setQuery] = useState("");
   const [command, setCommand] = useState<Command | null>(null);
-  const [description, setDescription] = useState<string | null>(null);
   const importChanged = useRef(false);
   const sheet = useRef<HTMLDivElement>(null);
   const data = loaded && book && loaded.bookId === book.id && loaded.revision === revision ? loaded.data : null;
@@ -346,12 +347,12 @@ export function BookWorkspace() {
           <div ref={turnLayers} className={styles.turnLayers} data-page-turn-layers aria-hidden="true" inert><div className={styles.turnUnderlay} />{Array.from({ length: 6 }, (_, index) => <div className={styles.turnSheet} key={index} />)}</div>
         </div>
       </main>
-      <aside data-library-shelf className={styles.shelf} aria-label="Bookshelf"><LibraryDrawerClose side="shelf" /><details open><summary><LibraryShelfTitle /> <span className={styles.shelfCount}>{books.length}</span></summary><p className={styles.shelfIntro}>A book for every part of your school.</p><div data-library-books className={styles.books}>{books.map(item => <div key={item.id} className={styles.bookTile}>
+      <aside data-library-shelf className={styles.shelf} aria-label="Bookshelf"><LibraryDrawerClose side="shelf" /><details open><summary><LibraryShelfTitle /> <span className={styles.shelfCount}>{books.length}</span></summary><p className={styles.shelfIntro}>Your work is organised into books. Open a book to get started.</p><div data-library-books className={styles.books}>{books.map(item => <div key={item.id} className={styles.bookTile}>
         <button className={styles.bookButton} onClick={() => navigate(item.id)} aria-label={`Open ${item.title}`} aria-pressed={book?.id === item.id}>
           <span data-book-cover className={styles.cover} style={{ "--book-color": item.color } as React.CSSProperties}><span className={styles.coverNumber}>{item.mark}</span><span data-cover-title className={styles.coverTitle}>{item.title}</span><span data-cover-seal className={styles.coverSeal} aria-hidden="true">N</span><span className={styles.coverBottom}>NEDECEN</span></span>
           <span data-book-title className={styles.bookTitle}>{item.title}</span>
-        </button><button data-book-info className={styles.bookInfo} aria-label={`About ${item.title}`} aria-expanded={description === item.id} onClick={() => setDescription(description === item.id ? null : item.id)}>ⓘ <span>About this book</span></button>
-        <Collapse open={description === item.id}><p className={styles.bookDescription}>{item.description}</p></Collapse>
+        </button>
+        <p className={styles.bookDescription}>{item.description}</p>
       </div>)}</div><p className={styles.shelfFoot}>Made for the way schools work.</p></details></aside>
     </div>
     {command && <CommandDialog command={command} onClose={() => setCommand(null)} onSaved={refresh} />}

@@ -1,0 +1,14 @@
+.content { font-size:14px; line-height:1.65; }
+.content > p { margin:0 0 14px; }
+.fields { border:0; padding:0; margin:0 0 16px; min-width:0; }
+.selection { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:16px 0 8px; }
+.selection span { color:var(--muted); font-size:12px; }
+.content .selection label, .content .list label { display:flex; flex-direction:row; align-items:center; gap:10px; margin:0; }
+.content input[type=checkbox] { width:18px; height:18px; margin:0; flex-shrink:0; accent-color:var(--book-accent); }
+.list { max-height:32dvh; overflow:auto; list-style:none; margin:0; padding:0; border-block:1px solid var(--line); }
+.list li { padding:8px 0; }
+.list label { min-height:36px; }
+.list small { display:block; color:var(--muted); font-size:12px; }
+.review { padding:14px; border:1px solid var(--book-accent-border); background:var(--book-accent-soft); border-radius:8px; }
+.review p { margin:8px 0 14px; }
+@media(max-width:600px) { .content .selection label, .content .list label { min-height:44px; } .review button { width:100%; } }

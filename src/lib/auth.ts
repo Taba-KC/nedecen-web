@@ -3,12 +3,11 @@
  * Reading a role here controls the interface only. The backend must verify the token and
  * permissions again for every protected request.
  */
-import { api, refreshAccessToken } from "./api";
+import { api, refreshAccessToken, rememberAccessToken, currentAccessToken, revokeBrowserSession } from "./api";
 import { rememberedLibraryLocation, resetActiveLibraryLocation, type LibraryRole } from "./libraryMemory";
 
 interface LoginResponse {
   accessToken: string;
-  refreshToken: string;
 }
 
 /**
@@ -35,8 +34,7 @@ export async function login(
   try {
     const res = await api.post<LoginResponse>("/auth/people/login", { username, password });
     const payload = decodeToken(res.accessToken);
-    localStorage.setItem("accessToken", res.accessToken);
-    localStorage.setItem("refreshToken", res.refreshToken);
+    rememberAccessToken(res.accessToken);
     localStorage.setItem("accountType", "person");
     localStorage.setItem("role", (payload.role as string) ?? "teacher");
     localStorage.setItem("schoolId", String(payload.schoolId ?? ""));
@@ -46,8 +44,7 @@ export async function login(
     try {
       const res = await api.post<LoginResponse>("/auth/learners/login", { username, password });
       const payload = decodeToken(res.accessToken);
-      localStorage.setItem("accessToken", res.accessToken);
-      localStorage.setItem("refreshToken", res.refreshToken);
+      rememberAccessToken(res.accessToken);
       localStorage.setItem("accountType", "learner");
       localStorage.setItem("schoolId", String(payload.schoolId ?? ""));
       localStorage.setItem("accountId", String(payload.accountId ?? ""));
@@ -61,11 +58,11 @@ export async function login(
 }
 
 /**
- * Clear this browser's session values. This helper does not call the backend logout endpoint
- * to revoke a refresh token.
+ * Revoke the server refresh cookie and clear this browser's session metadata.
  */
 export function logout() {
   resetActiveLibraryLocation();
+  void revokeBrowserSession().catch(() => { /* Local sign out still succeeds while offline. */ });
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("accountType");
@@ -113,12 +110,12 @@ export function getAccountId(): number | null {
 }
 
 /**
- * Check whether this browser has an access token. This does not prove the token is valid or
- * unexpired; API requests verify that.
+ * Check for an in-memory token or remembered account metadata while cookie restoration runs.
+ * This is only a UI hint; API requests verify the actual credentials.
  */
 export function isLoggedIn(): boolean {
   if (typeof window === "undefined") return false;
-  return !!localStorage.getItem("accessToken");
+  return !!currentAccessToken() || !!getAccountType();
 }
 
 /**
@@ -145,9 +142,9 @@ export function getResumePath(accountType: "person" | "learner" | "manager", rol
 export async function restoreSavedSession(): Promise<string | null> {
   const account = getAccountType();
   if (!account || !["person", "learner", "manager"].includes(account)) return null;
-  let token = localStorage.getItem("accessToken");
+  let token = currentAccessToken();
   let claims = decodeToken(token ?? "");
-  if (!token || typeof claims.exp !== "number" || claims.exp * 1000 <= Date.now() + 30000) {
+  if (localStorage.getItem("refreshToken") || !token || typeof claims.exp !== "number" || claims.exp * 1000 <= Date.now() + 30000) {
     token = await refreshAccessToken();
     if (!token) return null;
     claims = decodeToken(token);
@@ -162,8 +159,7 @@ export async function restoreSavedSession(): Promise<string | null> {
 export async function loginManager(username: string, password: string) {
   const res = await api.post<LoginResponse>("/auth/managers/login", { username, password });
   const payload = decodeToken(res.accessToken);
-  localStorage.setItem("accessToken", res.accessToken);
-  localStorage.setItem("refreshToken", res.refreshToken);
+  rememberAccessToken(res.accessToken);
   localStorage.setItem("accountType", "manager");
   localStorage.setItem("accountId", String(payload.accountId));
   localStorage.setItem("role", "app_manager");

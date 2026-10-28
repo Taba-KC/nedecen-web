@@ -66,3 +66,12 @@ The phone workspace retains the full-width paper, book accents and temporary men
 Roster previews retain the desktop table but display labelled record cards on phones, using the same inputs and save logic. The curriculum manager and account setup screens have matching touch sizes and readable input text. Desktop layouts remain intact; familiar editing/deletion controls stay compact on phones.
 
 `scripts/test-mobile-polish-browser.cjs` exercises principal books, teacher planning/confirmation/homework, learner lessons/homework/syllabus, the manager editor and entry screens with isolated API fixtures at 320, 360, 390, 768 and 1600 pixels. Screenshots are saved under `.next/mobile-polish-screenshots/`. Set `MOBILE_WIDTH` to inspect one workspace width, or `MOBILE_ENTRY_ONLY=1` to check entry screens alone.
+
+
+### Navigation introduction
+
+`LibraryTutorial.tsx` is shared by principal/administration, teacher and learner libraries through `ResponsiveLibrary.tsx`. It offers a three-step tour (books, pages, switching books), opens the real menus on compact screens, and outlines the relevant navigation region. The tutorial does not save or change school records.
+
+The first three separate visits offer Show me / Maybe later and a Don't ask again checkbox. Completing the tour stops automatic prompts. Navigation help in the left-menu footer always allows replay. Browser local storage keys include account type, school and account ID; staff teaching/administration modes share one preference. This is a device-local preference, not a server-synchronised account setting. Refreshes and route changes within a tab session do not count as new visits within 30 minutes. A fresh tab session counts as a visit. Storage failure does not block navigation or manual help.
+
+Library descriptions are visible below the book titles, and the library includes a plain-English explanation of the book metaphor even when the tour is skipped.

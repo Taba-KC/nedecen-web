@@ -63,7 +63,7 @@ export default function LoginPage() {
         <div className="flex flex-col justify-between flex-1 p-12">
 
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium"></span>
+            <span className="text-sm font-medium">TO BE DONE</span>
           </div>
 
           <div>

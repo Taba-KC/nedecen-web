@@ -118,9 +118,13 @@ export async function refreshAccessToken(): Promise<string | null> {
  * Turn an unsuccessful HTTP response into an Error the calling form can display. A failed
  * request must not look like a successful Save.
  */
+export class ApiError extends Error {
+  constructor(message: string, public status: number) { super(message); }
+}
+
 async function parseError(res: Response) {
   const body = await res.json().catch(() => ({}));
-  throw new Error(body.error ?? `Request failed: ${res.status}`);
+  throw new ApiError(body.error ?? `Request failed: ${res.status}`, res.status);
 }
 
 /**

@@ -9,7 +9,7 @@ export type LearnerLesson = { id: number; lessonNumber: number; date: string; st
 export type LearnerQuestion = { id: number; body: string; conceptId: number; conceptName: string; chapterName: string; topicName: string };
 export type LearnerHomework = { id: number; activityNumber: number; lessonId: number; dueDate: string; releaseAt: string | null; canReveal: boolean; questions: LearnerQuestion[] };
 export type LearnerSubject = { attendanceLocation?:{building:string;classroom:string}|null; academicYear?:number; id: number; subjectId: number; subjectName: string; syllabus: LearnerConcept[]; lessons: LearnerLesson[]; homework: LearnerHomework[] };
-export type LearnerWorkspaceData = { profile: { firstName: string; surname: string; number: string; username: string | null; schoolName: string; className: string; gradeNumber: number }; subjects: LearnerSubject[] };
+export type LearnerWorkspaceData = { accountReview?: { access: "restricted"; reference: string } | null; profile: { firstName: string; surname: string; number: string; username: string | null; schoolName: string; className: string; gradeNumber: number }; subjects: LearnerSubject[] };
 export const LEARNER_BOOKS = [
   { id: "lessons", title: "Lessons", mark: "01", color: "#8b413d", description: "Prepare for your next lesson, revisit completed lessons and give feedback on your learning goals." },
   { id: "homework", title: "Homework", mark: "02", color: "#96713d", description: "Find your home activities and see worked answers when your teacher releases them." },

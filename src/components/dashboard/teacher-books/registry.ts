@@ -8,6 +8,11 @@ import type { BookPage } from "@/components/principal/books/types";
 
 export type TeacherTask = { id: string; classSubjectId: number; lessonId: number; subjectName: string; className: string; kind: string; date: string };
 export type TeacherDashboard = {
+  aiAvailable?: boolean;
+  managedClasses?: { id: number; name: string }[];
+  pendingAccountCount?: number;
+  pendingClaimCount?: number;
+  pendingPasswordCount?: number;
   profile: { firstName: string; surname: string; title?: string | null; username: string | null; number: string; schoolName: string };
   subjects: Subject[];
   needsYou: TeacherTask[];
@@ -16,9 +21,10 @@ export type TeacherDashboard = {
 export type TeacherPage = Omit<BookPage, "children"> & { subject?: Subject; subjects?: Subject[]; chapter?: Subject["curriculum"][number]; children?: TeacherPage[] };
 export const TEACHER_BOOKS = [
   { id: "lessons", title: "Lessons", mark: "01", color: "#8b413d", description: "Plan lessons, confirm what you taught and review lesson feedback, organised by class and subject." },
-  { id: "homework", title: "Homework", mark: "02", color: "#96713d", description: "Create questions linked to the concepts covered in taught lessons." },
+  { id: "homework", title: "Homework", mark: "02", color: "#96713d", description: "Create homework and revisit published activities to add or update worked answers." },
   { id: "curriculum", title: "Curriculum", mark: "03", color: "#536b58", description: "Explore chapters, topics and concepts in each class subject. Coverage follows confirmed teaching." },
   { id: "announcements", title: "Announcements", mark: "04", color: "#786081", description: "School news, reminders and important updates relevant to your teaching day." },
+  { id: "accounts", title: "Accounts Management", mark: "05", color: "#526e79", description: "Review learner claim references, confirm accounts and manage access for your classes." },
 ] as const;
 export type TeacherBookId = typeof TEACHER_BOOKS[number]["id"];
 
@@ -52,6 +58,7 @@ export function today() {
  * Indexes produce display numbers; record IDs produce stable page IDs.
  */
 export function teacherPages(bookId: TeacherBookId, subjects: Subject[]): TeacherPage[] {
+  if (bookId === "accounts") return [{ id: "claimed-accounts", title: "Claimed accounts", number: "1", kind: "claimed-accounts" }, { id: "confirmed-accounts", title: "Confirmed accounts", number: "2", kind: "confirmed-accounts" }];
   if (bookId === "announcements") return [{ id: "under-development", title: "Still under development", number: "1", kind: "under-development" }];
   const grouped = new Map<number, Subject[]>();
   for (const subject of subjects) grouped.set(subject.classId, [...(grouped.get(subject.classId) ?? []), subject]);
@@ -67,6 +74,7 @@ export function teacherPages(bookId: TeacherBookId, subjects: Subject[]): Teache
           { id: `lesson-feedback-${subject.id}`, title: "See lesson feedback", number: `${sub}.3`, kind: "lesson-feedback", subject },
         ] : bookId === "homework" ? [
           { id: `compose-${subject.id}`, title: "Create homework", number: `${sub}.1`, kind: "compose", subject },
+          { id: `previous-homework-${subject.id}`, title: "Previous homework", number: `${sub}.2`, kind: "homework-history", subject },
         ] : subject.curriculum.map((chapter, j) => ({ id: `chapter-${subject.id}-${chapter.id}`, title: chapter.name, number: `${sub}.${j + 1}`, kind: "chapter", subject, chapter }));
         return { id: `subject-${subject.id}`, title: subject.subjectName, number: sub, kind: "subject", subject, children };
       }),

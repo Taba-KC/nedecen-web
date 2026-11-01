@@ -14,6 +14,8 @@ import HomeworkForm from "../HomeworkForm";
 import type { HomeworkMode } from "../HomeworkMethodFilters";
 import { allocationName, dateLabel, lessonName, today, type TeacherBookId, type TeacherPage } from "./registry";
 import LessonFeedback from "./LessonFeedback";
+import PreviousHomework from "./PreviousHomework";
+import AccountsManagement from "./AccountsManagement";
 import TeacherDialog from "./TeacherDialog";
 import TeacherSection from "./TeacherSection";
 import ConceptRows from "./ConceptRows";
@@ -22,8 +24,8 @@ import book from "@/components/principal/books/books.module.css";
 import workflow from "../role-dashboard.module.css";
 import styles from "./teacher-books.module.css";
 
-export type Navigate = (bookId?: TeacherBookId, pageId?: string, lessonId?: number) => void;
-type Props = { bookId: TeacherBookId; page: TeacherPage; navigate: Navigate; refresh: () => void; selectedLessonId: number | null; homeworkMode?: HomeworkMode };
+export type Navigate = (bookId?: TeacherBookId, pageId?: string, lessonId?: number, activityId?: number) => void;
+type Props = { bookId: TeacherBookId; page: TeacherPage; navigate: Navigate; refresh: () => void; selectedLessonId: number | null; selectedActivityId?: number | null; aiAvailable?: boolean; homeworkMode?: HomeworkMode };
 const formClass = `${workflow.paperWorkflows} ${styles.workflow}`;
 
 /**
@@ -40,7 +42,7 @@ const Section = TeacherSection;
  * selection stay in sync.
  */
 export function PageLinks({ pages, bookId, navigate, empty }: { pages: TeacherPage[]; bookId: TeacherBookId; navigate: Navigate; empty: string }) {
-  const description = (page: TeacherPage) => page.chapter ? `${page.chapter.taught} / ${page.chapter.total} concepts taught` : page.kind === "subject" ? page.subject?.currentChapter?.name ?? "Curriculum pending" : page.kind === "plan" ? "Choose concepts and a lesson date" : page.kind === "confirm" ? "Record the concepts you taught" : page.kind === "compose" ? "Prepare questions from a taught lesson" : page.kind === "lesson-feedback" ? "Review understanding and plan corrections" : "Open this page";
+  const description = (page: TeacherPage) => page.chapter ? `${page.chapter.taught} / ${page.chapter.total} concepts taught` : page.kind === "subject" ? page.subject?.currentChapter?.name ?? "Curriculum pending" : page.kind === "plan" ? "Choose concepts and a lesson date" : page.kind === "confirm" ? "Record the concepts you taught" : page.kind === "compose" ? "Prepare questions from a taught lesson" : page.kind === "homework-history" ? "Reopen published homework and add or update worked answers" : page.kind === "lesson-feedback" ? "Review understanding and plan corrections" : "Open this page";
   return pages.length ? <ul className={`${book.rows} ${styles.spacedRows}`}>{pages.map(page => <li key={page.id}><div className={styles.rowBody}><strong className={styles.singleLine}>{page.title}</strong><small className={styles.rowDetail}>{description(page)}</small></div><MobileAction icon="right" label={`Open ${page.title}`} className={book.textButton} onClick={() => navigate(bookId, page.id)}>Open</MobileAction></li>)}</ul> : <p className={book.empty}>{empty}</p>;
 }
 
@@ -83,7 +85,8 @@ function ConfirmTaughtLessons({ subject, selectedLessonId, navigate, refresh }: 
  * Dispatch the selected kind to its form or list. A new kind in the registry needs a
  * matching branch here to become a usable page.
  */
-export default function TeacherBookPage({ bookId, page, navigate, refresh, selectedLessonId, homeworkMode }: Props) {
+export default function TeacherBookPage({ bookId, page, navigate, refresh, selectedLessonId, selectedActivityId, aiAvailable, homeworkMode }: Props) {
+  if (bookId === "accounts") return <AccountsManagement confirmed={page.id === "confirmed-accounts"} onChanged={refresh} />;
   const subject = page.subject;
   if (page.kind === "under-development") return <Section title="About Announcements"><p className={styles.note}>School news, reminders and important updates will appear here when this feature is ready.</p></Section>;
   if (page.kind === "class") return <>
@@ -94,6 +97,7 @@ export default function TeacherBookPage({ bookId, page, navigate, refresh, selec
   if (page.kind === "plan") return <><div className={formClass}><PlanLessonForm subject={subject} onSaved={refresh} /></div></>;
   if (page.kind === "confirm") return <ConfirmTaughtLessons subject={subject} selectedLessonId={selectedLessonId} navigate={navigate} refresh={refresh} />;
   if (page.kind === "lesson-feedback") return <LessonFeedback subject={subject} onAdded={refresh} />;
+  if (page.kind === "homework-history") return <PreviousHomework subject={subject} selectedLessonId={selectedLessonId} selectedActivityId={selectedActivityId} aiAvailable={aiAvailable} onSelect={(lessonId, activityId) => navigate("homework", page.id, lessonId, activityId)} onSaved={refresh} />;
   if (page.kind === "compose") {
     const eligible = subject.lessons.filter(lesson => lesson.status === "confirmed" && !lesson.homework.length && lesson.concepts.length > 0);
     const selected = subject.lessons.find(lesson => lesson.id === selectedLessonId && lesson.status === "confirmed" && lesson.concepts.length > 0);

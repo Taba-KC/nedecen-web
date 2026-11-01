@@ -26,6 +26,7 @@ export function AccountClaimPage({ kind }: { kind: "staff" | "learner" }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [reference, setReference] = useState("");
   const pending = useRef(false);
 
   /**
@@ -61,7 +62,7 @@ export function AccountClaimPage({ kind }: { kind: "staff" | "learner" }) {
     try {
       const details = { schoolCode: schoolCode.trim(), initials: initials.trim().toUpperCase(), username: username.trim(), password };
       if (isStaff) await claimStaffAccount({ ...details, staffNumber: number.trim() });
-      else await claimLearnerAccount({ ...details, admissionNumber: number.trim() });
+      else { const claim = await claimLearnerAccount({ ...details, admissionNumber: number.trim() }); setReference(claim.reference); }
       setPassword(""); setConfirmPassword(""); setSuccess(true);
     } catch (err) { setError(err instanceof Error ? err.message : "Could not set up your account. Please try again."); }
     finally { pending.current = false; setLoading(false); }
@@ -90,9 +91,10 @@ export function AccountClaimPage({ kind }: { kind: "staff" | "learner" }) {
         <section className={styles.card} aria-label={isStaff ? "Claim staff account" : "Claim learner account"}><MotionPanel changeKey={`${step}/${success}`}>
           {success ? <div className={styles.success}>
             <span className={styles.successIcon} aria-hidden="true">✓</span>
-            <span className={styles.eyebrow}>You’re all set</span>
-            <h2 tabIndex={-1} ref={element => { element?.focus(); }}>Account ready</h2>
-            <p>Your {kind} account is set up. Sign in with your new username and password.</p>
+            <span className={styles.eyebrow}>{isStaff ? "You’re all set" : "Reference created"}</span>
+            <h2 tabIndex={-1} ref={element => { element?.focus(); }}>{isStaff ? "Account ready" : "Claim awaiting confirmation"}</h2>
+            <p>{isStaff ? "Your staff account is set up. Sign in with your new username and password." : "Your class manager must match your reference and confirm your claim before you can access your schoolwork. Sign in to check your claim’s status."}</p>
+            {!isStaff && <div className={styles.accountSummary}><span>Your private claim reference</span><strong>{reference}</strong><p>Save this reference or show it from your waiting screen. Only show it to your class manager.</p></div>}
             <div className={styles.accountSummary}><span>Your username</span><strong>{username.trim()}</strong></div>
             <Link href="/" className={styles.primary}>Sign in now <span aria-hidden="true">→</span></Link>
           </div> : <>

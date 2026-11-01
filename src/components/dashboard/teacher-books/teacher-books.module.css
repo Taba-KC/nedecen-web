@@ -4,6 +4,10 @@
  * every principal screen.
  */
 .note { font-size: 12px; line-height: 1.8; color: var(--muted); }
+.publishedQuestions { list-style:none; padding:0; margin:0; }
+.publishedQuestions > li { padding:18px 0; border-bottom:1px solid var(--line); }
+.publishedQuestions > li > h3 { margin:0 0 8px; font-size:13px; font-weight:600; }
+.publishedQuestions > li > div > p:first-child { white-space:pre-wrap; overflow-wrap:anywhere; }
 .pageContent { display: flow-root; padding-top: 24px; }
 .pageContent > section:first-child { margin-top: 0; }
 /**

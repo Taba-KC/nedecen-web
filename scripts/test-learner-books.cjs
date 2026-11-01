@@ -40,15 +40,15 @@ for (const book of LEARNER_BOOKS) {
     assert.match(markup, /data-page-heading/); checked++;
     if (page.subject.id !== 10) continue;
     if (page.kind === "lessons") {
-      assert.match(markup, /Lesson 4 - 28 Oct 2026/); assert.match(markup, />Info</); assert.match(markup, />Prerequisites</); assert.match(markup, />Learning goals</);
-      assert.match(markup, /role="tablist"/); assert.match(markup, /role="tabpanel"/); assert.match(markup, /conceptNumber">1\./);
+      assert.match(markup, /Lesson 4 - 28 Oct 2026/); assert.match(markup, /aria-label="Lesson chalkboard"/); assert.match(markup, /Before we begin/); assert.match(markup, /Learning goals/); assert.match(markup, /Identify triangle sides/);
+      assert.match(markup, /role="tablist"/); assert.match(markup, /role="tabpanel"/); assert.match(markup, /aria-label="Next concept"/); assert.match(markup, /aria-label="Previous concept"/);
       assert.doesNotMatch(markup, /You are preparing for|You are reviewing|<h2>Concepts/);
       const completed = renderToStaticMarkup(React.createElement(Page, { page, tab: "completed", selectedId: null, navigate() {}, onSelect() {}, onSaved() {} }));
-      assert.match(completed, /Lesson 2 - 9 Oct 2026/); assert.match(completed, />All lessons \(2\)/); assert.match(completed, /Give feedback/); assert.doesNotMatch(completed, /Old lesson concept/);
+      assert.match(completed, /Lesson 2 - 9 Oct 2026/); assert.match(completed, />All lessons \(2\)/); assert.match(completed, /Submit feedback/); assert.doesNotMatch(completed, /Old lesson concept/);
     }
     if (page.kind === "homework") {
-      assert.match(markup, /Home Activity 3/); assert.match(markup, /Activity 3 question/); assert.match(markup, />Topic info</); assert.match(markup, /disabled=""[^>]*>Answer/);
-      assert.match(markup, /role="tablist"/); assert.match(markup, /role="tabpanel"/); assert.match(markup, /conceptNumber">1\./);
+      assert.match(markup, /Home Activity 3/); assert.match(markup, /Activity 3 question/); assert.match(markup, />Topic info/); assert.match(markup, /disabled=""[^>]*>Show answer/);
+      assert.match(markup, /role="tablist"/); assert.match(markup, /role="tabpanel"/); assert.match(markup, /aria-label="Homework chalkboard"/);
       assert.doesNotMatch(markup, /You are viewing|<h2>Questions/);
       assert.ok(markup.indexOf("Answers unlock on") < markup.indexOf('data-question-text'));
       const previous = renderToStaticMarkup(React.createElement(Page, { page, tab: "previous", selectedId: null, navigate() {}, onSelect() {}, onSaved() {} }));
@@ -61,7 +61,7 @@ for (const book of LEARNER_BOOKS) {
     if (page.kind === "syllabus") {
       assert.match(markup, /Resolve perpendicular vectors/); assert.doesNotMatch(markup, /Future concept/); assert.match(markup, /Vectors · Components/);
       assert.match(markup, /role="tablist" aria-label="Syllabus coverage"/); assert.match(markup, />Not yet covered</);
-      assert.match(markup, />Prerequisites</); assert.match(markup, />Learning goals</);
+      assert.match(markup, /aria-label="Syllabus chalkboard"/); assert.match(markup, /Prerequisites/); assert.match(markup, /Learning goals/);
       const uncovered = renderToStaticMarkup(React.createElement(Page, { page, tab: "uncovered", selectedId: null, onSelect() {}, onSaved() {} }));
       assert.match(uncovered, /Future concept/); assert.doesNotMatch(uncovered, /Resolve perpendicular vectors/);
       const allCovered = renderToStaticMarkup(React.createElement(Page, { page: { ...page, subject: { ...page.subject, syllabus: [concept] } }, tab: "uncovered", selectedId: null, onSelect() {}, onSaved() {} }));

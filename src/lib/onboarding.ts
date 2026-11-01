@@ -42,8 +42,8 @@ export async function claimLearnerAccount(data: {
   initials: string;
   username: string;
   password: string;
-}): Promise<void> {
-  await api.post("/learners/onboarding", data);
+}): Promise<{ reference: string }> {
+  return api.post("/learners/onboarding", data);
 }
 
 /**

@@ -16,7 +16,7 @@ import StaffClasses, { type StaffPanel } from "./StaffClasses";
 
 type Concept = { id: number; name: string; prerequisites?: string[]; learningOutcomes?: string[]; reviewGoals?: string[]; teachingBrief?: { conceptName: string; prerequisites: string[]; learningOutcomes: string[] } | null };
 type Chapter = { id: number; name: string; total: number; taught: number; topics: { id: number; name: string; concepts: Concept[] }[] };
-type Lesson = { id: number; lessonNumber?: number; date: string; status: string; chapterName: string; concepts: Concept[]; homework: { id: number; dueDate: string; questions: { id: number; body: string; conceptId: number; memo?: string | null }[] }[] };
+type Lesson = { id: number; lessonNumber?: number; date: string; status: string; chapterName: string; concepts: Concept[]; homework: { id: number; activityNumber?: number; dueDate: string; questions: { id: number; body: string; conceptId: number; memo?: string | null }[] }[] };
 export type Subject = { id: number; subjectName: string; className: string; classId: number; gradeNumber: number; totalConcepts: number; taughtConcepts: number; currentChapter: { name: string } | null; curriculum: Chapter[]; lessons: Lesson[] };
 type Task = { id: string; classSubjectId: number; lessonId: number; subjectName: string; className: string; kind: string; date: string };
 type Dashboard = { profile: { firstName: string; surname: string; title?: string | null; username: string | null; number: string; schoolName: string; className: string | null }; subjects: Subject[]; needsYou: Task[]; waitingForYou: Task[]; comingUp: Task[]; announcements: { id: number; title: string; body: string; createdAt: string }[] };

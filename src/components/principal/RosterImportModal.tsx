@@ -128,7 +128,7 @@ export function RosterImportModal({ schoolId, kind, onClose: onDismiss, onSaved,
       <p role="status" className="mb-4 text-sm">{rows.length} rows · {invalid ? invalid + " need attention" : "Ready to save"}{skipped > 0 && ` · ${skipped} existing records skipped`}</p>
       <div className={`max-h-[50vh] overflow-auto rounded-lg border ${styles.reviewViewport}`} style={{ borderColor: "var(--color-border)" }}>
         <table className={`w-full min-w-[700px] text-left text-sm ${styles.reviewTable}`}>
-          <thead className="sticky top-0 z-10" style={{ background: inline ? "#eef0e7" : "#292929" }}><tr><th className="p-3">Row</th>{fields.map(field => <th key={field.key} className="p-3">{field.label}</th>)}<th className="p-3">Action</th></tr></thead>
+          <thead className="sticky top-0 z-10" style={{ background: inline ? "#eef0e7" : "var(--color-card)" }}><tr><th className="p-3">Row</th>{fields.map(field => <th key={field.key} className="p-3">{field.label}</th>)}<th className="p-3">Action</th></tr></thead>
           <tbody>{rows.map((row, index) => <tr key={row.key} className="border-t align-top" style={{ borderColor: "var(--color-border)" }}>
             <td className="p-3" data-label="Row">{index + 1}</td>
             {fields.map(field => <td key={field.key} className="p-2" data-label={field.label}><input value={row[field.key] ?? ""} disabled={busy} maxLength={200} aria-label={field.label + ", row " + (index + 1)} aria-invalid={issues[index]?.length ? true : undefined}

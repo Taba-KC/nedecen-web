@@ -42,13 +42,13 @@ export function LibraryContents({ children, onSignOut }: { children: ReactNode; 
     <div className={styles.contentsBody}>{children}</div>
     <footer className={styles.menuFooter}>
       <button type="button" className={styles.signOutButton} style={{marginBottom:10}} onClick={showHelp}>Navigation help <span aria-hidden="true">?</span></button>
-      {access?.canTeach&&(access.isPrincipal||access.capabilities.length>0)&&<button type="button" className={styles.signOutButton} style={{marginBottom:10}} onClick={()=>router.push(administration?"/dashboard/staff":"/dashboard/principal")}>{administration?"Switch to teaching":"Switch to administration"} <span aria-hidden="true">⇄</span></button>}
+      {(access?.canTeach||access?.canManageAccounts)&&(access.isPrincipal||access.capabilities.length>0)&&<button type="button" className={styles.signOutButton} style={{marginBottom:10}} onClick={()=>router.push(administration?"/dashboard/staff":"/dashboard/principal")}>{administration?"Switch to teaching":"Switch to administration"} <span aria-hidden="true">⇄</span></button>}
       <button type="button" className={styles.signOutButton} onClick={onSignOut}>Sign out <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 4H4v16h5M9 12h11m-4-4 4 4-4 4" /></svg></button>
     </footer>
   </aside>;
 }
 
-export default function ResponsiveLibrary({ bookTitle, location, children }: { bookTitle?: string; location: string; children: ReactNode }) {
+export default function ResponsiveLibrary({ bookTitle, location, children, notifications }: { bookTitle?: string; location: string; children: ReactNode; notifications?: ReactNode }) {
   useLibraryMemory();
   const mode = useSyncExternalStore(subscribeMode, currentMode, () => "desktop" as Mode);
   const [drawerState, setDrawer] = useState<{ side: Drawer; location: string; introBook?: string }>({ side: null, location });
@@ -143,9 +143,10 @@ export default function ResponsiveLibrary({ bookTitle, location, children }: { b
       else setDrawer({ side: null, location });
     } else if (mode !== "desktop" && target?.closest("[data-library-contents] nav button")) setDrawer({ side: null, location });
   }}>
-    <header className={styles.navigationBar} ref={bar} aria-label="Book navigation">
+    <header className={`${styles.navigationBar}${notifications ? ` ${styles.withNotifications}` : ""}`} ref={bar} aria-label="Book navigation">
       <button type="button" aria-label="Open pages menu" aria-controls={`${id}-contents`} aria-expanded={overlay === "contents"} disabled={!bookOpen} onClick={() => setDrawer({ side: overlay === "contents" ? null : "contents", location })}><MenuIcon /></button>
       <span className={styles.bookName}>{bookTitle ?? "Your library"}</span>
+      {notifications}
       <button type="button" aria-label="Open library" aria-controls={`${id}-shelf`} aria-expanded={overlay === "shelf"} onClick={() => setDrawer({ side: overlay === "shelf" ? null : "shelf", location })}><BooksIcon /></button>
     </header>
     <h1 className={styles.libraryHeading}>Your library</h1>

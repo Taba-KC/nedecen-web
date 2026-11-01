@@ -70,12 +70,12 @@ for (const book of TEACHER_BOOKS) {
     rendered++;
   }
   const empty = teacherPages(book.id, []);
-  assert.equal(empty.length, book.id === "announcements" ? 1 : 0, `${book.id}: no invented class pages`);
+  assert.equal(empty.length, book.id === "announcements" ? 1 : book.id === "accounts" ? 2 : 0, `${book.id}: no invented class pages`);
 }
 assert.equal(allocationName(subject), "Mathematics · Grade 8A");
 assert.equal(allocationName(other), "English · Grade 8A");
 assert.match(dateLabel("2000-01-01"), /^0?1 Jan 2000$/);
-assert.deepEqual(TEACHER_BOOKS.map(book => book.title), ["Lessons", "Homework", "Curriculum", "Announcements"]);
+assert.deepEqual(TEACHER_BOOKS.map(book => book.title), ["Lessons", "Homework", "Curriculum", "Announcements", "Accounts Management"]);
 const lessonPages = teacherPages("lessons", data.subjects);
 assert.deepEqual(lessonPages.map(page => [page.title, page.number]), [["Grade 8A", "1"], ["Grade 11B", "2"]]);
 assert.deepEqual(lessonPages[0].children.map(page => [page.title, page.number]), [["English", "1.1"], ["Mathematics", "1.2"]]);
@@ -86,7 +86,25 @@ const confirmationMarkup = renderToStaticMarkup(React.createElement(TeacherBookP
 assert.match(confirmationMarkup, /Confirm taught lesson/);
 assert.match(confirmationMarkup, /Available on/);
 const homeworkPages = teacherPages("homework", data.subjects);
-assert.deepEqual(homeworkPages[0].children[1].children.map(page => page.title), ["Create homework"]);
+assert.deepEqual(homeworkPages[0].children[1].children.map(page => page.title), ["Create homework", "Previous homework"]);
+const historyPage = flattenTeacherPages(homeworkPages).find(page => page.id === "previous-homework-10");
+assert.deepEqual(teacherPagePath(homeworkPages, historyPage.id).map(page => page.title), ["Grade 8A", "Mathematics", "Previous homework"]);
+const historyMarkup = renderToStaticMarkup(React.createElement(TeacherBookPage, props("homework", historyPage)));
+assert.match(historyMarkup, /Home Activity 1/); assert.match(historyMarkup, /Select previous homework/); assert.match(historyMarkup, /Edit answer/);
+const missingAnswers = { ...subject, lessons: subject.lessons.map(lesson => ({ ...lesson, homework: lesson.homework.map(activity => ({ ...activity, questions: activity.questions.map(question => ({ ...question, memo: null })) })) })) };
+const missingMarkup = renderToStaticMarkup(React.createElement(TeacherBookPage, props("homework", { ...historyPage, subject: missingAnswers })));
+assert.match(missingMarkup, /1 worked answer missing/);
+const editMarkup = renderToStaticMarkup(React.createElement(TeacherBookPage, { ...props("homework", { ...historyPage, subject: missingAnswers }), selectedLessonId: 53 }));
+assert.match(editMarkup, /Add answer/); assert.match(editMarkup, /What is one half\?/); assert.match(editMarkup, /scheduled answer-release time/);
+const { publishedHomework } = require("../src/components/dashboard/teacher-books/PreviousHomework.tsx");
+assert.deepEqual(publishedHomework(subject).map(entry => entry.lesson.id), [53]);
+assert.deepEqual(publishedHomework({ ...subject, lessons: [subject.lessons[3], { ...subject.lessons[2], homework: [{ ...subject.lessons[3].homework[0], id: 99 }] }] }).map(entry => entry.lesson.id), [52, 53], "Homework published later for an older lesson still appears first");
+const manyHistory = { ...subject, lessons: Array.from({length:8}, (_,n) => ({...subject.lessons[3],id:100+n,lessonNumber:n+1,homework:[{...subject.lessons[3].homework[0],id:200+n,activityNumber:n+1}]})) };
+const recentMarkup = renderToStaticMarkup(React.createElement(TeacherBookPage, props("homework", {...historyPage,subject:manyHistory})));
+assert.equal((recentMarkup.match(/<option /g)??[]).length,6,"The selector contains the latest activity and the five before it");
+assert.match(recentMarkup,/Home Activity 8/); assert.doesNotMatch(recentMarkup,/Home Activity 1/);
+const emptyHistory = renderToStaticMarkup(React.createElement(TeacherBookPage, props("homework", { ...historyPage, subject: other })));
+assert.match(emptyHistory, /No homework has been published/);
 const compose = flattenTeacherPages(homeworkPages).find(page => page.id === "compose-10");
 const list = TeacherBookPage(props("homework", compose));
 const create = find(list, node => node.type === MobileAction && node.props.label === "Create homework");

@@ -7,12 +7,11 @@
  */
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { login, getRole, getResumePath, restoreSavedSession } from "@/lib/auth";
-import { useTheme } from "@/hooks/useTheme";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { theme, toggle } = useTheme();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -59,27 +58,26 @@ export default function LoginPage() {
       {/* Left panel — desktop only */}
       <div
         className="hidden lg:flex lg:flex-col lg:w-[48%] min-h-screen"
-        style={{ backgroundColor: "var(--color-primary)" }}
+        style={{ backgroundColor: "white", color: "var(--color-text)" }}
       >
         <div className="flex flex-col justify-between flex-1 p-12">
 
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: "var(--color-accent)" }} />
-            <span className="text-white text-sm font-medium">NEDECEN</span>
+            <span className="text-sm font-medium"></span>
           </div>
 
           <div>
-            <h1 className="text-5xl font-bold text-white leading-tight mb-4">
+            <h1 className="text-5xl font-bold leading-tight mb-4">
               No learner falls behind unnoticed.{" "}
-              <span style={{ color: "var(--color-accent)" }}>Real feedback, for every lesson.</span>
+              <span style={{ color: "var(--color-accent)" }}>Useful feedback, for every lesson.</span>
             </h1>
-            <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--color-text-muted)" }}>
               Lesson feedback, homework insights, and curriculum coverage unified in
               one place for every learner, teacher, subject, concept, and class.
             </p>
           </div>
 
-          <p className="text-sm tracking-widest" style={{ color: "rgba(255,255,255,0.40)" }}>
+          <p className="text-sm tracking-widest" style={{ color: "var(--color-text-muted)" }}>
             South African secondary schools · CAPS aligned
           </p>
 
@@ -89,23 +87,8 @@ export default function LoginPage() {
       {/* Right panel */}
       <div className="flex-1 flex flex-col min-h-screen bg-[var(--color-background)] sm:bg-[var(--color-canvas)] lg:bg-[var(--color-background)]">
 
-        {/* Top bar */}
-        <div className="flex justify-end p-4 sm:p-6 lg:p-8">
-          <button
-            onClick={toggle}
-            className="text-xs font-semibold px-4 py-2 rounded-full transition-all"
-            style={{
-              backgroundColor: "var(--color-surface)",
-              color: "var(--color-text)",
-              border: "1.5px solid var(--color-border)",
-            }}
-          >
-            {theme === "light" ? "Dark mode" : "Light mode"}
-          </button>
-        </div>
-
         {/* Form area */}
-        <div className="flex-1 flex items-center justify-center px-6 pb-10 sm:px-10">
+        <div className="flex-1 flex items-center justify-center px-6 py-10 sm:px-10">
           <div
             className="w-full max-w-sm sm:rounded-2xl sm:shadow-md sm:p-8 lg:shadow-none lg:rounded-none lg:p-0"
             style={{ backgroundColor: "var(--color-card)" }}
@@ -249,6 +232,7 @@ export default function LoginPage() {
 
             </form>
 
+            <p className="mt-4 text-sm text-center"><Link href="/forgot-password" style={{ color: "var(--color-accent)", textDecoration: "underline" }}>Forgot password?</Link></p>
             {/* Footer hint */}
             <p className="mt-6 text-xs text-center" style={{ color: "var(--color-text-muted)" }}>
               Contact your school administrator if you cannot access your account.

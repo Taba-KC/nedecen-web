@@ -1,21 +1,23 @@
 "use client";
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { api } from '@/lib/api';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { api, ApiError } from '@/lib/api';
 import { logout } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import book from '@/components/principal/books/books.module.css';
-type Setup = { classId:number|null;status: 'ready' | 'awaiting-class' | 'choose-subjects' | 'awaiting-class-setup'; className?: string; revision: number; academicYear: number | null; common: { id: number; name: string }[]; different: { id: number; name: string }[]; options: { id: number; name: string; subjects: { id: number; name: string }[] }[]; configuration: { primarySubjectId: number; locations: { subjectId: number; building: string; classroom: string }[] } | null };
+type Setup = { reference?: string; classId:number|null;status: 'ready' | 'awaiting-confirmation' | 'awaiting-class' | 'choose-subjects' | 'awaiting-class-setup'; className?: string; revision: number; academicYear: number | null; common: { id: number; name: string }[]; different: { id: number; name: string }[]; options: { id: number; name: string; subjects: { id: number; name: string }[] }[]; configuration: { primarySubjectId: number; locations: { subjectId: number; building: string; classroom: string }[] } | null };
 /** This gate appears before any learning data is requested; the server enforces it too. */
 export default function LearnerSetup({ children }: { children: ReactNode }) {
   const router = useRouter(); const [setup, setSetup] = useState<Setup | null>(null), [selection, setSelection] = useState<number | null>(null), [error, setError] = useState(''), [busy, setBusy] = useState(false);
-  const load = useCallback(() => { api.get<Setup>('/learners/me/learning-setup').then(value => { setSetup(value); setError(''); }).catch(err => setError(err.message)); }, []);
+  const requests = useRef(0);
+  const load = useCallback(() => { const request = ++requests.current; api.get<Setup>('/learners/me/learning-setup').then(value => { if (request !== requests.current) return; setSetup(value); setError(''); }).catch(err => { if (request !== requests.current) return; if (err instanceof ApiError && [401, 403].includes(err.status)) setSetup(null); setError(err.message); }); }, []);
   useEffect(() => { load(); window.addEventListener('focus', load); const timer = setInterval(load, 30000); return () => { window.removeEventListener('focus', load); clearInterval(timer); }; }, [load]);
   if (setup?.status === 'ready') return <>{children}</>;
   async function confirm() { if (!selection || !setup || busy) return; setBusy(true); setError(''); try { await api.post('/learners/me/learning-setup', { classId:setup.classId,academicYear:setup.academicYear,streamId: selection, revision: setup.revision }); load(); } catch (err) { setError(err instanceof Error ? err.message : 'Could not confirm subjects.'); } finally { setBusy(false); } }
   return <main className={book.workspace} style={{ padding: '24px 16px', display: 'grid', placeItems: 'center' }}><section style={{ width: 'min(100%,640px)', padding: 24, background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: 8 }}>
-    <h1 style={{ font: '28px Georgia,serif', marginBottom: 18 }}>{setup?.status === 'choose-subjects' ? 'Confirm your subjects' : setup?.status === 'awaiting-class' ? 'Waiting for your class' : 'Preparing your learning'}</h1>
+    <h1 style={{ font: '28px Georgia,serif', marginBottom: 18 }}>{!setup && error ? 'Account access unavailable' : setup?.status === 'awaiting-confirmation' ? 'Waiting for account confirmation' : setup?.status === 'choose-subjects' ? 'Confirm your subjects' : setup?.status === 'awaiting-class' ? 'Waiting for your class' : 'Preparing your learning'}</h1>
     {error && <p role="alert" className={book.error}>{error}</p>}
-    {!setup && <p role="status">Loading your class details…</p>}
+    {!setup && !error && <p role="status">Loading your class details…</p>}
+    {setup?.status === 'awaiting-confirmation' && <><p>Your class manager needs to confirm that you claimed this account. Show them this private reference:</p><p style={{ fontSize: 24, fontFamily: 'monospace', margin: '24px 0', overflowWrap: 'anywhere' }}>{setup.reference}</p><p>Your schoolwork becomes available after the matching claim is confirmed. If you did not make this claim, speak to your class manager.</p></>}
     {setup?.status === 'awaiting-class' && <p>Your account and past work are safe. Your school needs to assign your current class before you can continue. Please contact your principal.</p>}
     {setup?.status === 'awaiting-class-setup' && <p>Your school is updating the subject split and classroom locations for your class. Please contact your principal.</p>}
     {setup?.status === 'choose-subjects' && <><p>{setup.className} is your full-time master class for {setup.academicYear}. Learners attend the shared subjects together, but attend different optional subjects. Confirm the combination you actually study before continuing.</p>
